@@ -141,8 +141,6 @@ def resentLayerLaterState_18(inputLayer, inputChannels, channels, poolingStride)
     return x
 
 def resnetOuputStage(inputLayer, pools=1000):
-    # TODO not sure if should be encoded in 1k values as described or decoded from this point... not sure how they are doing that, 
-    # likely just a flatten operation but need a second opinion
     output = AveragePooling2D(pool_size=2,strides=1)(inputLayer)
     return output
 
