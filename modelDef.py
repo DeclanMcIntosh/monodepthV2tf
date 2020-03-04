@@ -40,40 +40,42 @@ def generateResNetEncoderLayers(inputLayer, resnetType=50):
         x = resentLayerLaterState_50(x, 256, [64,64,256],1)
         x = resentLayerLaterState_50(x, 256, [64,64,256],1)
         
-        x = resentLayerLaterState_50(x, 256, [128,128,512],2)
-        x = resentLayerLaterState_50(x, 512, [128,128,512],1)
-        x = resentLayerLaterState_50(x, 512, [128,128,512],1)
-        x = resentLayerLaterState_50(x, 512, [128,128,512],1)
+        x1 = resentLayerLaterState_50(x, 256, [128,128,512],2)
+        x1 = resentLayerLaterState_50(x1, 512, [128,128,512],1)
+        x1 = resentLayerLaterState_50(x1, 512, [128,128,512],1)
+        x1 = resentLayerLaterState_50(x1, 512, [128,128,512],1)
 
-        x = resentLayerLaterState_50(x, 512, [256,256,1024],2)
-        x = resentLayerLaterState_50(x, 1024, [256,256,1024],1)
-        x = resentLayerLaterState_50(x, 1024, [256,256,1024],1)
-        x = resentLayerLaterState_50(x, 1024, [256,256,1024],1)
-        x = resentLayerLaterState_50(x, 1024, [256,256,1024],1)
-        x = resentLayerLaterState_50(x, 1024, [256,256,1024],1)
+        x2 = resentLayerLaterState_50(x1, 512, [256,256,1024],2)
+        x2 = resentLayerLaterState_50(x2, 1024, [256,256,1024],1)
+        x2 = resentLayerLaterState_50(x2, 1024, [256,256,1024],1)
+        x2 = resentLayerLaterState_50(x2, 1024, [256,256,1024],1)
+        x2 = resentLayerLaterState_50(x2, 1024, [256,256,1024],1)
+        x2 = resentLayerLaterState_50(x2, 1024, [256,256,1024],1)
 
-        x = resentLayerLaterState_50(x, 1024, [512,512,2048],2)
-        x = resentLayerLaterState_50(x, 2048, [512,512,2048],1)
-        x = resentLayerLaterState_50(x, 2048, [512,512,2048],1)
+        x3 = resentLayerLaterState_50(x2, 1024, [512,512,2048],2)
+        x3 = resentLayerLaterState_50(x3, 2048, [512,512,2048],1)
+        x3 = resentLayerLaterState_50(x3, 2048, [512,512,2048],1)
 
-        x = resnetOuputStage(x)
-        return x 
+        x3 = resnetOuputStage(x3)
+        return x3, x2, x1, x
+
     else: # is resnet 18
         x = resentLayerInitialStage(inputLayer)
-        x = resentLayerLaterState_18(x, 64, [64,64],1)
-        x = resentLayerLaterState_18(x, 64, [64,64],1)
-
-        x = resentLayerLaterState_18(x, 64, [128,128],2)
-        x = resentLayerLaterState_18(x, 128, [128,128],1)
-
-        x = resentLayerLaterState_18(x, 128, [256,256],2)
-        x = resentLayerLaterState_18(x, 256, [256,256],1)
         
-        x = resentLayerLaterState_18(x, 256, [512,512],2)
-        x = resentLayerLaterState_18(x, 512, [512,512],1)
+        x = resentLayerLaterState_18(x, 64, [64,64],1)
+        x = resentLayerLaterState_18(x, 64, [64,64],1)
 
-        x = resnetOuputStage(x)
-        return x
+        x1 = resentLayerLaterState_18(x, 64, [128,128],2)
+        x1 = resentLayerLaterState_18(x1, 128, [128,128],1)
+
+        x2 = resentLayerLaterState_18(x1, 128, [256,256],2)
+        x2 = resentLayerLaterState_18(x2, 256, [256,256],1)
+        
+        x3 = resentLayerLaterState_18(x2, 256, [512,512],2)
+        x3 = resentLayerLaterState_18(x3, 512, [512,512],1)
+
+        x3 = resnetOuputStage(x3)
+        return x3, x2, x1, x
 
 def resentLayerInitialStage(inputLayer):
     x = Conv2D(filters=64,kernel_size=7,strides=2,data_format='channels_last',activation='relu',padding='same')(inputLayer)
@@ -150,7 +152,7 @@ if __name__ == "__main__":
     
     InputLayer = Input(shape=(256,256,3))
 
-    networkOuput = generateResNetEncoderLayers(InputLayer, resnetType=50)
+    networkOuput, scale_1, scale_2, scale_3 = generateResNetEncoderLayers(InputLayer, resnetType=50)
 
 
     model = Model(inputs=[InputLayer], output=[networkOuput])
