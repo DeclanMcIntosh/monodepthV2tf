@@ -18,6 +18,10 @@ main model does a resnet encoding then a depth decoding
 
 the res-net can be tested on and trained on imagenet to verify correctness and working
 
+ref:
+https://medium.com/@14prakash/understanding-and-implementing-architectures-of-resnet-and-resnext-for-state-of-the-art-image-cf51669e1624    
+https://keras.io/applications/#resnet
+https://towardsdatascience.com/understanding-and-visualizing-resnets-442284831be8
 
 '''
 
