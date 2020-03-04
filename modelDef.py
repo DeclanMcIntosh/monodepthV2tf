@@ -94,11 +94,11 @@ def resentLayerLaterState_50(inputLayer, inputChannels, channels, poolingStride)
 
     assert len(channels) == 3
 
-    x = Conv2D(channels[0], kernel_size=1,strides=poolingStride,data_format='channels_last',activation='relu',padding='same')(inputLayer)
+    x = Conv2D(channels[0], kernel_size=poolingStride,strides=poolingStride,data_format='channels_last',activation='relu',padding='same')(inputLayer)
     x = BatchNormalization(axis=3)(x)
-    x = Conv2D(channels[1], kernel_size=3,strides=1,data_format='channels_last',activation='relu',padding='same')(inputLayer)
+    x = Conv2D(channels[1], kernel_size=3,strides=1,data_format='channels_last',activation='relu',padding='same')(x)
     x = BatchNormalization(axis=3)(x)
-    x = Conv2D(channels[2], kernel_size=1,strides=1,data_format='channels_last',activation='linear',padding='same')(inputLayer)
+    x = Conv2D(channels[2], kernel_size=1,strides=1,data_format='channels_last',activation='linear',padding='same')(x)
     x = BatchNormalization(axis=3)(x)
 
     if inputChannels != channels[2]:
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     
     InputLayer = Input(shape=(256,256,3))
 
-    networkOuput = generateResNetEncoderLayers(InputLayer, resnetType=18)
+    networkOuput = generateResNetEncoderLayers(InputLayer, resnetType=50)
 
 
     model = Model(inputs=[InputLayer], output=[networkOuput])
