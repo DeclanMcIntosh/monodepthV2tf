@@ -7,4 +7,8 @@ TODO:
         - calculate per-pixle smoothness loss 
 
     
-'''
+''' 
+
+import keras
+import keras.backend as K
+
