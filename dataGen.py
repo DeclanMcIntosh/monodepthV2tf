@@ -6,6 +6,9 @@ import numpy as np
 
 Declan McIntosh Robert Lee Data Generator for MonodepthV2 Keras/Tf implementation
 
+TODO:
+ - load a right image, and the three temporally local neighborhood of left image samples
+
 '''
 
 def get_input(path,imageSize):
