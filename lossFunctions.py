@@ -26,6 +26,8 @@ def findGradients(y_predicted, leftImgPyramid):
     '''
     parameters:
         y_predicted -  array of 4 scales of estimation with (Network dispartiy map of shape (height, width, 1))
+
+        leftImgPyramid - up sampled pyramid of the image for the different scales
     '''
     # addapted from https://github.com/mtngld/monodepth-1/blob/1f1fc80ac0dc727f3de561ead89e6792aea5e178/monodepth_model.py#L109 
     def gradient_x(img):
@@ -47,7 +49,6 @@ def findGradients(y_predicted, leftImgPyramid):
     smoothness_x = [dispGradientX[i] * weightX[i] for i in range(4)]
     smoothness_y = [dispGradientY[i] * weightY[i] for i in range(4)]
     return smoothness_x + smoothness_y
-
 
 
 def smoothnessLoss(y_predicted, leftImage):
