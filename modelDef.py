@@ -3,6 +3,9 @@ from keras.layers import Conv2D, BatchNormalization, MaxPool2D, Flatten, Average
 
 from keras import Model
 from keras.optimizers import Adam
+
+from resnetDef import ResNet50, ResNet18
+
 '''
 
 Create a resnet encoder either type 50 layers or type 18 layers...
@@ -145,7 +148,7 @@ def resnetOuputStage(inputLayer, pools=1000):
     output = AveragePooling2D(pool_size=2,strides=1,padding='same')(inputLayer)
     return output
 
-def buildDecoder(inputLayer, scale_1, scale_2, scale3, outputChannels=1):
+def buildDecoder(inputLayer, scale_1, scale_2, scale_3, outputChannels=1):
     pass
 
     x = Conv2D(512, kernel_size=3, strides=1, data_format='channels_last',padding='same', name="DecoderCov_Block_1_1")(inputLayer)
@@ -202,13 +205,26 @@ def buildDecoder(inputLayer, scale_1, scale_2, scale3, outputChannels=1):
     
     return x, scale_1_out, scale_2_out, scale_3_out
 
+
+def create_monoDepth_Model(input_shape=(640,192,3), encoder_type=50):
+    if encoder_type == 50:
+        inputLayer, outputLayer, scaleLayers = ResNet50(input_shape=(640,192,3),include_top=False, create_encoder=True)
+        networkOuput, scale_1_out, scale_2_out, scale_3_out = buildDecoder(outputLayer, scaleLayers[2], scaleLayers[1], scaleLayers[0], 1)
+        model = Model(inputs=[inputLayer], output=[networkOuput])
+        model.load_weights(by_name=True, filepath='resnet50_imagenet_1000_no_top.h5')
+        model.summary()
+    if encoder_type == 18:
+        inputLayer, outputLayer, scaleLayers = ResNet18(input_shape=(640,192,3),include_top=False, create_encoder=True)
+        networkOuput, scale_1_out, scale_2_out, scale_3_out = buildDecoder(outputLayer, scaleLayers[2], scaleLayers[1], scaleLayers[0], 1)
+        model = Model(inputs=[inputLayer], output=[networkOuput])
+        model.load_weights(by_name=True, filepath='resnet18_imagenet_1000_no_top.h5')
+        model.summary()
+    return model
+
 if __name__ == "__main__":    
-    InputLayer = Input(shape=(256,256,3))
 
-    networkOuput, scale_1, scale_2, scale_3 = generateResNetEncoderLayers(InputLayer, resnetType=18)
-
-    networkOuput, scale_1_out, scale_2_out, scale_3_out = buildDecoder(networkOuput, scale_1, scale_2, scale_3, 1)
-
-    model = Model(inputs=[InputLayer], output=[networkOuput])
-    model.compile(optimizer=Adam(), loss='mse')
-    model.summary()
+    print("testing creating models")
+    model = create_monoDepth_Model(input_shape=(640,192,3), encoder_type=18)
+    print("Done createting ResNet18 backbone model")
+    model = create_monoDepth_Model(input_shape=(1024,320,3), encoder_type=50)
+    print("Done createting ResNet50 backbone model")
