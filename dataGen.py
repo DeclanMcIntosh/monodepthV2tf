@@ -2,22 +2,12 @@ import keras
 import os
 import random
 import numpy as np
-'''
+import cv2
 
+'''
 Declan McIntosh Robert Lee Data Generator for MonodepthV2 Keras/Tf implementation
-
-TODO:
- - load a right image, and the three temporally local neighborhood of left image samples
-
 '''
 
-def get_input(path,imageSize):
-    img = cv2.resize(cv2.imread(path, cv2.IMREAD_GRAYSCALE), (imageSize,imageSize))/255.
-    return img 
-
-def get_output(path, imageSize,annotationFiles):
-    labels = cv2.resize(cv2.imread(annotationFiles+path, cv2.IMREAD_GRAYSCALE), (imageSize,imageSize))/255.
-    return labels
 
 def preprocess_input(image, randomVals):
     '''
@@ -32,7 +22,8 @@ def preprocess_input(image, randomVals):
     '''
     if randomVals[0] > 0.5:
         # flip image horizontally
-        image = np.flip(image, 1)
+        #image = np.flip(image, 1)
+        None
     if randomVals[1] > 0.5:
         # increase/ decrease contrast
         image = np.clip(image * (0.8 + randomVals[2]/2.5), a_max=255)
@@ -54,45 +45,96 @@ def preprocess_input(image, randomVals):
     image = cv2.cvtColor(hsv_image, cv2.COLOR_HSV2BGR)
     return image
 
-def preprocess_output(anno, randomVals):
-    if randomVals[0] > 0.5:
-        # flip image horizontally
-        image = np.flip(image, 1)
-    return anno
 
-def image_generator(files, annotationFiles, batch_size = 64, seed=100, imageSize=256):
-    '''
-    Keras data generator function which continuously yeilds new input data, 
-    order of data is randomized after each pass over entire dataset.
-    '''
-    random.seed(seed)
-    filesSub = np.array(random.shuffle(os.listdir(files),random=random.random()))
-    counter = 0
-    while True:
-        x = 0
-        batch_paths = []
-        while x < batch_size:
-            if filesSub[counter] != 'desktop.ini':
-                batch_paths.append(filesSub[counter])
-                x += 1   
-            counter = (counter + 1) 
-            if counter % (filesSub.shape[0]) == 0:
-                filesSub = np.array(random.shuffle(os.listdir(files),random=random.random()))
-        batch_input  = []
-        batch_output = [] 
-        
-        for input_path in batch_paths:
-            input_img = get_input(files + input_path, imageSize)
-            output = get_output(input_path, annotationFiles=annotationFiles, imageSize=imageSize)
-            randomVals = []
-            for x in range(0,9):
-                randomVals.append(random.random())
-            input_img = preprocess_input(image=input_img, randomVals=randomVals)
-            output = preprocess_output(anno=output, randomVals=randomVals)
-            batch_input += [ input_img ]
-            batch_output += [ output ]
+    #for x in range(0,9):
+    #    randomVals.append(random.random())
+    #input_img = preprocess_input(image=input_img, randomVals=randomVals)
 
-        batch_x = np.array( batch_input )
-        batch_y = np.array( batch_output )
-    
-        yield( batch_x, batch_y )
+class depthDataGenerator(keras.utils.Sequence):
+    '''Generates data for Keras'''
+    '''Framework taken from https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly'''
+    '''Provided directories should contain the same number of files all with the same names to their pair image'''
+    def __init__(self, left_dir, right_dir, batch_size = 64, image_size=(640,192), shuffle=True, max_img_time_diff=700, agumentations=True):
+        self.left_dir = left_dir
+        self.right_dir = right_dir
+        self.image_size = image_size
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.max_img_time_diff = max_img_time_diff
+        self.agumentations = agumentations
+        self.inputs = []
+        self.on_epoch_end()
+
+    def __len__(self):
+        '''Denotes the number of batches per epoch'''
+        return int(np.floor(len(self.inputs) / self.batch_size))
+
+
+    def __getitem__(self, index):
+        '''Generate one batch of data'''
+        outX = np.empty((self.batch_size, *self.image_size, 3))
+        outY = np.empty((self.batch_size, 4 ,*self.image_size, 3))
+
+        imageNames = self.inputs[index*self.batch_size:(index+1)*self.batch_size]
+
+        for _, imageNameSet in enumerate(imageNames):
+            left        = cv2.imread(self.left_dir + imageNameSet[0])
+            right_minus = cv2.imread(self.right_dir + imageNameSet[1])
+            right       = cv2.imread(self.right_dir + imageNameSet[2])
+            right_plus  = cv2.imread(self.right_dir + imageNameSet[0])
+
+            
+            if self.agumentations:
+                randomVals = []
+                for x in range(0,9):
+                    randomVals.append(random.random())
+                left_augmented = preprocess_input(image=left, randomVals=randomVals)
+            else:
+                left_augmented = left
+
+            outX[_] = left_augmented
+
+            outY[_,0] =  left
+            outY[_,1] =  right_minus
+            outY[_,2] =  right
+            outY[_,3] =  right_plus
+
+        return outX, outY
+                        
+
+    def on_epoch_end(self):
+        '''Updates indexes after each epoch'''
+        '''We want only images that have corresponding right iamges and nearby right images'''
+        print("")
+        leftImgs = os.listdir(self.left_dir)
+        debugCount = 0
+        debugBadCount = 0
+        for leftImageName in leftImgs:
+            index = leftImgs.index(leftImageName)
+            if index != 0 and index != len(leftImgs) - 1:
+                # grab nearby images
+                t_minus_1_name = leftImgs[index-1]
+                t_plus_1_name  = leftImgs[index+1]
+
+                # check the iamges are close together in time
+                
+                left_img_1_time = (int( leftImageName[-7:-4]) + int( leftImageName[-10:-8]) * 1000 +  int( leftImageName[-13:-11]) * 1000 * 60)# % (60 *60 * 1000)
+                t_minus_1_time  = (int(t_minus_1_name[-7:-4]) + int(t_minus_1_name[-10:-8]) * 1000 +  int(t_minus_1_name[-13:-11]) * 1000 * 60)# % (60 *60 * 1000)
+                t_plus_1_time   = (int( t_plus_1_name[-7:-4]) + int( t_plus_1_name[-10:-8]) * 1000 +  int( t_plus_1_name[-13:-11]) * 1000 * 60)# % (60 *60 * 1000)
+                
+                # ensure images are within some time frame of center image
+
+                if abs(left_img_1_time - t_minus_1_time) < self.max_img_time_diff and abs(left_img_1_time - t_plus_1_time) < self.max_img_time_diff:
+                    self.inputs.append([leftImageName,t_minus_1_name,t_plus_1_name])
+                    debugCount += 1
+                    print("Found ", debugCount, " input image sets to use in ", self.left_dir, "  " , debugBadCount, "number of un-useable images", end='\r')
+                else:
+                    debugBadCount += 1
+        if self.shuffle:
+            random.shuffle(self.inputs)         
+        print("")
+
+
+
+if __name__ == "__main__":
+    test = depthDataGenerator('../left/', '../left/')
