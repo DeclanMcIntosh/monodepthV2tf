@@ -68,3 +68,56 @@ def smoothnessLoss(y_predicted, leftImage):
     leftImgPyramid = [leftImgPyramid, leftImgPyramid_1_down, leftImgPyramid_2_down, leftImgPyramid_3_down]
 
     return [K.mean(K.abs(findGradients(y_predicted, leftImgPyramid)[i])) / 2 ** i for i in range(4)]
+
+
+def photoMetric(disp, left, right):
+
+    # Flatten and seperate out channels
+    disp_f =   K.flatten(disp)
+    left_f_0 =   K.flatten( left[:,:,0])
+    right_f_0 =  K.flatten(right[:,:,0])
+    left_f_1 =   K.flatten( left[:,:,1])
+    right_f_1 =  K.flatten(right[:,:,1])
+    left_f_2 =   K.flatten( left[:,:,2])
+    right_f_2 =  K.flatten(right[:,:,2])
+
+    # find the self-referantiatl indicies in the tensor
+    indicies = K.arange(0,K.shape(disp_f)[0], dtype='float64')
+
+    # offset the indicies by the disparities to make the reprojection referances for the left image
+    right_referances = K.clip(K.update_add(indicies, disp_f * -1. * K.shape(disp_f)[0]), 0, K.shape(disp_f)[0])
+
+    # gather the values to creat the left re-projected images
+    right_f_referance_to_projected_0 = K.gather(right_f_0, K.cast(right_referances, 'int64'))
+    right_f_referance_to_projected_1 = K.gather(right_f_1, K.cast(right_referances, 'int64'))
+    right_f_referance_to_projected_2 = K.gather(right_f_2, K.cast(right_referances, 'int64'))
+
+    # get difference between original left and right images
+    diffDirect      = K.abs(left_f_0 - right_f_0) + K.abs(left_f_1 - right_f_1) + K.abs(left_f_2 - right_f_2)/3.
+
+    # get difference between right and left reprojected images
+    diffReproject   = K.abs(left_f_0 - right_f_referance_to_projected_0) + K.abs(left_f_1 - right_f_referance_to_projected_1) + K.abs(left_f_2 - right_f_referance_to_projected_2)/3.
+
+    # develop mask for loss where the repojected loss is better than the direct comparision loss
+    minMask = K.cast(K.less(diffReproject, diffDirect), 'float64')
+
+    # apply mask
+    out = diffReproject * minMask
+
+    # determine mean and normalize 
+    return (K.sum(out) / K.sum(minMask))/255.
+
+
+class monoDepthV2Loss():
+    def __init__(self, mu, lambda_):
+        self.mu = mu
+        self.lambda_ = lambda_
+
+    def applyLoss(self, y_true, y_pred):
+        # rename and split values
+        left        = y_true[0]
+        right_minus = y_true[1]
+        right       = y_true[2]
+        right_plus  = y_true[3]
+
+        disp
