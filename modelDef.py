@@ -171,7 +171,7 @@ def buildDecoder(inputLayer, scale_1, scale_2, scale_3, outputChannels=1):
 
     scale_3_out = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock_Scale3")(x)
     scale_3_out = Conv2D(outputChannels, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="OutputConvBlock_Scale3")(scale_3_out)
-    scale_3_out = UpSampling2D(data_format='channels_last', name="upSampleSclae2Out", size=(8,8), interpolation='bilinear')(scale_3_out)
+    scale_3_out = UpSampling2D(data_format='channels_last', name="upSampleSclae3Out", size=(8,8), interpolation='bilinear')(scale_3_out)
 
 
     x = UpSampling2D(data_format='channels_last', name="UpSample3")(x)
