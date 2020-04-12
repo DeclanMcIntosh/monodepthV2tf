@@ -211,13 +211,13 @@ def create_monoDepth_Model(input_shape=(640,192,3), encoder_type=50):
         inputLayer, outputLayer, scaleLayers = ResNet50(input_shape=(640,192,3),include_top=False, create_encoder=True)
         networkOuput, scale_1_out, scale_2_out, scale_3_out = buildDecoder(outputLayer, scaleLayers[2], scaleLayers[1], scaleLayers[0], 1)
         model = Model(inputs=[inputLayer], outputs=[networkOuput, scale_1_out, scale_2_out, scale_3_out])
-        model.load_weights(by_name=True, filepath='resnet50_imagenet_1000_no_top.h5')
+        model.load_weights('resnet50_imagenet_1000_no_top.h5', by_name=True)
         model.summary()
     if encoder_type == 18:
         inputLayer, outputLayer, scaleLayers = ResNet18(input_shape=(640,192,3),include_top=False, create_encoder=True)
         networkOuput, scale_1_out, scale_2_out, scale_3_out = buildDecoder(outputLayer, scaleLayers[2], scaleLayers[1], scaleLayers[0], 1)
         model = Model(inputs=[inputLayer], outputs=[networkOuput, scale_1_out, scale_2_out, scale_3_out])
-        model.load_weights(by_name=True, filepath='resnet18_imagenet_1000_no_top.h5')
+        model.load_weights('resnet18_imagenet_1000_no_top.h5', by_name=True)
         model.summary()
     return model
 
