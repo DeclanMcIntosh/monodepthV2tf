@@ -278,5 +278,3 @@ if __name__ == "__main__":
         out = calculateLoss(left, right, disp)
     print("Evaluation took {} msecs".format(t.msecs))
     
-
-    # print(np.mean(out))
