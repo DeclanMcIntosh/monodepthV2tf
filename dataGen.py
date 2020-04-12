@@ -26,23 +26,23 @@ def preprocess_input(image, randomVals):
         None
     if randomVals[1] > 0.5:
         # increase/ decrease contrast
-        image = np.clip(image * (0.8 + randomVals[2]/2.5), a_max=255)
+        image = np.uint8(np.clip(image * (0.8 + randomVals[2]/2.5), a_min=0, a_max=255))
     # Convert image to HSV for some transformations
-    hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    hsv_image = np.int32(cv2.cvtColor(image, cv2.COLOR_BGR2HSV))
     if randomVals[3] > 0.5:
         # change brightness of image
-        hsv_image[:,:,2] += (((randomVals[4]/2.5 )- 0.2 ) * 255.) 
-        hsv_image[:,:,2] = np.clip(hsv_image[:,:,2], a_min = 0, a_max = 255) 
+        hsv_image[:,:,2] += int(((randomVals[4]/2.5 )- 0.2 ) * 255.) 
+        hsv_image[:,:,2] = np.clip(hsv_image[:,:,2], a_min =0, a_max = 255) 
     if randomVals[5] > 0.5:
         # change staturation
-        hsv_image[:,:,1] += (((randomVals[6]/2.5 )- 0.2 ) * 255.)
+        hsv_image[:,:,1] += int(((randomVals[6]/2.5 )- 0.2 ) * 255.)
         hsv_image[:,:,1] = np.clip(hsv_image[:,:,1], a_min = 0, a_max = 255) 
     if randomVals[7] > 0.5:
         # change Hue
-        hsv_image[:,:,0] += (((randomVals[8]/2.5 )- 0.2 ) * 179.)
+        hsv_image[:,:,0] += int(((randomVals[8]/2.5 )- 0.2 ) * 179.)
         hsv_image[:,:,0] = np.clip(hsv_image[:,:,0], a_min = 0, a_max = 179) 
     # Convert image back from HSV
-    image = cv2.cvtColor(hsv_image, cv2.COLOR_HSV2BGR)
+    image = cv2.cvtColor(np.uint8(hsv_image), cv2.COLOR_HSV2BGR)
     return image
 
 
@@ -72,16 +72,23 @@ class depthDataGenerator(keras.utils.Sequence):
 
     def __getitem__(self, index):
         '''Generate one batch of data'''
-        outX = np.empty((self.batch_size, *self.image_size, 3))
-        outY = np.empty((self.batch_size, 4 ,*self.image_size, 3))
+        outX =  np.empty((self.batch_size,  *self.image_size, 3))
+        outY_0 = np.empty((self.batch_size, *self.image_size, 3))
+        outY_1 = np.empty((self.batch_size, *self.image_size, 3))
+        outY_2 = np.empty((self.batch_size, *self.image_size, 3))
+        outY_3 = np.empty((self.batch_size, *self.image_size, 3))
 
         imageNames = self.inputs[index*self.batch_size:(index+1)*self.batch_size]
 
         for _, imageNameSet in enumerate(imageNames):
-            left        = cv2.imread(self.left_dir + imageNameSet[0])
-            right_minus = cv2.imread(self.right_dir + imageNameSet[1])
-            right       = cv2.imread(self.right_dir + imageNameSet[2])
-            right_plus  = cv2.imread(self.right_dir + imageNameSet[0])
+            left        = cv2.resize(cv2.imread(self.left_dir  + imageNameSet[0]), dsize=self.image_size)
+            right_minus = cv2.resize(cv2.imread(self.right_dir + imageNameSet[1]), dsize=self.image_size)
+            right       = cv2.resize(cv2.imread(self.right_dir + imageNameSet[2]), dsize=self.image_size)
+            right_plus  = cv2.resize(cv2.imread(self.right_dir + imageNameSet[0]), dsize=self.image_size)
+            
+            #print(left.shape)
+            #cv2.imshow('test', left)
+            #cv2.waitKey(-1)
 
             
             if self.agumentations:
@@ -92,14 +99,13 @@ class depthDataGenerator(keras.utils.Sequence):
             else:
                 left_augmented = left
 
-            outX[_] = left_augmented
+            outX[_]   =  np.transpose(left_augmented,   axes=[1,0,2])
+            outY_0[_] =  np.transpose(left,             axes=[1,0,2])
+            outY_1[_] =  np.transpose(right_minus,      axes=[1,0,2])
+            outY_2[_] =  np.transpose(right,            axes=[1,0,2])
+            outY_3[_] =  np.transpose(right_plus,       axes=[1,0,2])
 
-            outY[_,0] =  left
-            outY[_,1] =  right_minus
-            outY[_,2] =  right
-            outY[_,3] =  right_plus
-
-        return outX, outY
+        return outX, [outY_0, outY_1, outY_2, outY_3]
                         
 
     def on_epoch_end(self):
