@@ -114,10 +114,10 @@ class monoDepthV2Loss():
 
     def applyLoss(self, y_true, y_pred):
         # rename and split values
-        left        = y_true[0]
-        right_minus = y_true[1]
-        right       = y_true[2]
-        right_plus  = y_true[3]
+        left        = y_true[:,:,:,0:3]
+        right_minus = y_true[:,:,:,3:6]
+        right       = y_true[:,:,:,6:9]
+        right_plus  = y_true[:,:,:,9:12]
 
         disp        = y_pred
         # up-sample disparities by a nearest interpolation scheme for comparision at highest resolution per alrogithm
@@ -125,7 +125,7 @@ class monoDepthV2Loss():
         #L_s = smoothnessLoss(y_pred, left)
 
         L_p  = photoMetric(disp,left,right)
-
+        #L_p = K.mean(disp) # switching to this fixes out of bounds issue, will check to see if i can get this working 
         #return L_p* self.mu + L_s * self.lambda_
         return L_p
 

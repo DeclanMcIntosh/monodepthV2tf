@@ -151,23 +151,23 @@ def resnetOuputStage(inputLayer, pools=1000):
 def buildDecoder(inputLayer, scale_1, scale_2, scale_3, outputChannels=1):
     pass
 
-    x = Conv2D(512, kernel_size=3, strides=1, data_format='channels_last',padding='same', name="DecoderCov_Block_1_1")(inputLayer)
-    x = Conv2D(512, kernel_size=3, strides=1, data_format='channels_last',padding='same', name="DecoderCov_Block_1_2")(x)
-    x = Conv2D(512, kernel_size=3, strides=1, data_format='channels_last',padding='same', name="DecoderCov_Block_1_3")(x)
+    x = Conv2D(512, kernel_size=3, strides=1, data_format='channels_last',padding='same', name="DecoderCov_Block_1_1", activation='relu')(inputLayer)
+    x = Conv2D(512, kernel_size=3, strides=1, data_format='channels_last',padding='same', name="DecoderCov_Block_1_2", activation='relu')(x)
+    x = Conv2D(512, kernel_size=3, strides=1, data_format='channels_last',padding='same', name="DecoderCov_Block_1_3", activation='relu')(x)
     x = UpSampling2D(data_format='channels_last', name="UpSample1")(x)
 
     x = concatenate([x,scale_1],axis=3)
 
-    x = Conv2D(256, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_2_1")(x)
-    x = Conv2D(256, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_2_2")(x)
-    x = Conv2D(256, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_2_3")(x)
+    x = Conv2D(256, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_2_1", activation='relu')(x)
+    x = Conv2D(256, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_2_2", activation='relu')(x)
+    x = Conv2D(256, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_2_3", activation='relu')(x)
     x = UpSampling2D(data_format='channels_last', name="UpSample2")(x)
 
     x = concatenate([x,scale_2],axis=3)
 
-    x = Conv2D(128, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_3_1")(x)
-    x = Conv2D(128, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_3_2")(x)
-    x = Conv2D(128, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_3_3")(x)
+    x = Conv2D(128, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_3_1", activation='relu')(x)
+    x = Conv2D(128, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_3_2", activation='relu')(x)
+    x = Conv2D(128, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_3_3", activation='relu')(x)
 
     scale_3_out = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock_Scale3")(x)
     scale_3_out = Conv2D(outputChannels, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="OutputConvBlock_Scale3")(scale_3_out)
@@ -178,9 +178,9 @@ def buildDecoder(inputLayer, scale_1, scale_2, scale_3, outputChannels=1):
 
     x = concatenate([x,scale_3],axis=3)
 
-    x = Conv2D(64, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_4_1")(x)
-    x = Conv2D(64, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_4_2")(x)
-    x = Conv2D(64, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_4_3")(x)
+    x = Conv2D(64, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_4_1", activation='relu')(x)
+    x = Conv2D(64, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_4_2", activation='relu')(x)
+    x = Conv2D(64, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_4_3", activation='relu')(x)
 
     scale_2_out = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock_Scale2")(x)
     scale_2_out = Conv2D(outputChannels, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="OutputConvBlock_Scale2")(scale_2_out)
@@ -188,9 +188,9 @@ def buildDecoder(inputLayer, scale_1, scale_2, scale_3, outputChannels=1):
 
     x = UpSampling2D(data_format='channels_last', name="UpSample4")(x)
 
-    x = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_5_1")(x)
-    x = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_5_2")(x)
-    x = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_5_3")(x)
+    x = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_5_1", activation='relu')(x)
+    x = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_5_2", activation='relu')(x)
+    x = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_5_3", activation='relu')(x)
     
     scale_1_out = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock_Scale1")(x)
     scale_1_out = Conv2D(outputChannels, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="OutputConvBlock_Scale1")(scale_1_out)
@@ -198,10 +198,10 @@ def buildDecoder(inputLayer, scale_1, scale_2, scale_3, outputChannels=1):
     
     x = UpSampling2D(data_format='channels_last', name="UpSample5")(x)
 
-    x = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock1")(x)
-    x = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock2")(x)
-    x = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock3")(x)
-    x = Conv2D(outputChannels, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="OutputConvBlock")(x)
+    x = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock1", activation='relu')(x)
+    x = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock2", activation='relu')(x)
+    x = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock3", activation='relu')(x)
+    x = Conv2D(outputChannels, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="OutputConvBlock", activation='sigmoid')(x)
     
     return x, scale_1_out, scale_2_out, scale_3_out
 
@@ -210,13 +210,13 @@ def create_monoDepth_Model(input_shape=(640,192,3), encoder_type=50):
     if encoder_type == 50:
         inputLayer, outputLayer, scaleLayers = ResNet50(input_shape=(640,192,3),include_top=False, create_encoder=True)
         networkOuput, scale_1_out, scale_2_out, scale_3_out = buildDecoder(outputLayer, scaleLayers[2], scaleLayers[1], scaleLayers[0], 1)
-        model = Model(inputs=[inputLayer], outputs=[networkOuput, scale_1_out, scale_2_out, scale_3_out])
+        model = Model(inputs=[inputLayer], outputs=[networkOuput])#, scale_1_out, scale_2_out, scale_3_out])
         model.load_weights('resnet50_imagenet_1000_no_top.h5', by_name=True)
         model.summary()
     if encoder_type == 18:
         inputLayer, outputLayer, scaleLayers = ResNet18(input_shape=(640,192,3),include_top=False, create_encoder=True)
         networkOuput, scale_1_out, scale_2_out, scale_3_out = buildDecoder(outputLayer, scaleLayers[2], scaleLayers[1], scaleLayers[0], 1)
-        model = Model(inputs=[inputLayer], outputs=[networkOuput, scale_1_out, scale_2_out, scale_3_out])
+        model = Model(inputs=[inputLayer], outputs=[networkOuput])#, scale_1_out, scale_2_out, scale_3_out])
         model.load_weights('resnet18_imagenet_1000_no_top.h5', by_name=True)
         model.summary()
     return model
