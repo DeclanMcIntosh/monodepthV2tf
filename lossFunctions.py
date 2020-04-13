@@ -66,7 +66,7 @@ def photoMetric(disp, left, right):
 
     # Flatten and seperate out channels
     disp_f =     K.flatten(disp)
-    left_f_0 =   K.flatten( left[:,:,0])
+    left_f_0 =   K.flatten( left[:,:,0]) 
     right_f_0 =  K.flatten(right[:,:,0])
     left_f_1 =   K.flatten( left[:,:,1])
     right_f_1 =  K.flatten(right[:,:,1])
@@ -82,10 +82,11 @@ def photoMetric(disp, left, right):
     # OK TO THIS POINT NO GRADS GET LOST
 
     # gather the values to creat the left re-projected images
-    right_f_referance_to_projected_0 = K.gather(right_f_0, K.cast(right_referances, 'int64')) # not differentiable due to cast operation
-    right_f_referance_to_projected_1 = K.gather(right_f_1, K.cast(right_referances, 'int64'))
-    right_f_referance_to_projected_2 = K.gather(right_f_2, K.cast(right_referances, 'int64'))
+    right_f_referance_to_projected_0 = K.gather(right_f_0, K.cast(tf.floor(right_referances), 'int32')) # not differentiable due to cast operation
+    right_f_referance_to_projected_1 = K.gather(right_f_1, K.cast(tf.floor(right_referances), 'int32'))
+    right_f_referance_to_projected_2 = K.gather(right_f_2, K.cast(tf.floor(right_referances), 'int32'))
 
+    return K.mean(right_referances)
     # get difference between original left and right images
     diffDirect      = K.abs(left_f_0 - right_f_0) + K.abs(left_f_1 - right_f_1) + K.abs(left_f_2 - right_f_2)/3.
 
