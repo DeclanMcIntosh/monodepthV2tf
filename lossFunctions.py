@@ -99,11 +99,8 @@ def photoMetric(disp, left, right):
     # apply mask
     out = (diffReproject/255.) * minMask
 
-    # stupid gradients keeping 
-    loss = K.abs(disp_f - (disp_f * out))/disp_f
-
     # determine mean and normalize 
-    return (K.sum(loss) / K.cast(tf.math.count_nonzero(loss),dtype='float32'))
+    return (K.sum(out) / K.cast(tf.math.count_nonzero(out),dtype='float32'))
 
 
 class monoDepthV2Loss():
