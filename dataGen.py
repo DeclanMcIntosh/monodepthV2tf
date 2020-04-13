@@ -113,6 +113,13 @@ class depthDataGenerator(keras.utils.Sequence):
         '''We want only images that have corresponding right iamges and nearby right images'''
         print("")
         leftImgs = os.listdir(self.left_dir)
+        leftImgs.sort()
+        
+        prefixes = ('.')
+        for word in leftImgs[:]:
+            if word.startswith(prefixes):
+                leftImgs.remove(word)
+
         debugCount = 0
         debugBadCount = 0
         for leftImageName in leftImgs:
@@ -143,4 +150,6 @@ class depthDataGenerator(keras.utils.Sequence):
 
 
 if __name__ == "__main__":
-    test = depthDataGenerator('../left/', '../left/')
+    test = depthDataGenerator('../validate/left/', '../validate/right/')
+
+    print('Data generator test success.')
