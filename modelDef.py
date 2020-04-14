@@ -1,5 +1,5 @@
 import keras
-from keras.layers import Conv2D, BatchNormalization, MaxPool2D, Flatten, AveragePooling2D, concatenate, Add, Activation, Input, UpSampling2D
+from keras.layers import Conv2D, BatchNormalization, MaxPool2D, Flatten, AveragePooling2D, concatenate, Add, Activation, Input, UpSampling2D, Conv2DTranspose
 
 from keras import Model
 from keras.optimizers import Adam
@@ -151,56 +151,51 @@ def resnetOuputStage(inputLayer, pools=1000):
 def buildDecoder(inputLayer, scale_1, scale_2, scale_3, outputChannels=1):
     pass
 
-    x = Conv2D(512, kernel_size=3, strides=1, data_format='channels_last',padding='same', name="DecoderCov_Block_1_1", activation='relu')(inputLayer)
-    x = Conv2D(512, kernel_size=3, strides=1, data_format='channels_last',padding='same', name="DecoderCov_Block_1_2", activation='relu')(x)
-    x = Conv2D(512, kernel_size=3, strides=1, data_format='channels_last',padding='same', name="DecoderCov_Block_1_3", activation='relu')(x)
-    x = UpSampling2D(data_format='channels_last', name="UpSample1")(x)
+    x = Conv2D(1024, kernel_size=3, strides=1, data_format='channels_last',padding='same', name="DecoderCov_Block_1_1", activation='relu')(inputLayer)
+    x = Conv2D(1024, kernel_size=3, strides=1, data_format='channels_last',padding='same', name="DecoderCov_Block_1_2", activation='relu')(x)
+
+    x = Conv2DTranspose(512, (2, 2), strides=(2, 2), data_format='channels_last', name="ConvTranspose1")(x)
 
     x = concatenate([x,scale_1],axis=3)
 
-    x = Conv2D(256, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_2_1", activation='relu')(x)
-    x = Conv2D(256, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_2_2", activation='relu')(x)
-    x = Conv2D(256, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_2_3", activation='relu')(x)
-    x = UpSampling2D(data_format='channels_last', name="UpSample2")(x)
+    x = Conv2D(512, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_2_1", activation='relu')(x)
+    x = Conv2D(512, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_2_2", activation='relu')(x)
+
+    x = Conv2DTranspose(256, (2, 2), strides=(2, 2), data_format='channels_last', name="ConvTranspose2")(x)
 
     x = concatenate([x,scale_2],axis=3)
 
-    x = Conv2D(128, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_3_1", activation='relu')(x)
-    x = Conv2D(128, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_3_2", activation='relu')(x)
-    x = Conv2D(128, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_3_3", activation='relu')(x)
+    x = Conv2D(256, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_3_1", activation='relu')(x)
+    x = Conv2D(256, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_3_2", activation='relu')(x)
 
     scale_3_out = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock_Scale3")(x)
     scale_3_out = Conv2D(outputChannels, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="OutputConvBlock_Scale3")(scale_3_out)
     scale_3_out = UpSampling2D(data_format='channels_last', name="upSampleSclae3Out", size=(8,8), interpolation='bilinear')(scale_3_out)
 
-
-    x = UpSampling2D(data_format='channels_last', name="UpSample3")(x)
+    x = Conv2DTranspose(128, (2, 2), strides=(2, 2), data_format='channels_last', name="ConvTranspose3")(x)
 
     x = concatenate([x,scale_3],axis=3)
 
-    x = Conv2D(64, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_4_1", activation='relu')(x)
-    x = Conv2D(64, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_4_2", activation='relu')(x)
-    x = Conv2D(64, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_4_3", activation='relu')(x)
+    x = Conv2D(128, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_4_1", activation='relu')(x)
+    x = Conv2D(128, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_4_2", activation='relu')(x)
 
     scale_2_out = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock_Scale2")(x)
     scale_2_out = Conv2D(outputChannels, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="OutputConvBlock_Scale2")(scale_2_out)
     scale_2_out = UpSampling2D(data_format='channels_last', name="upSampleSclae2Out", size=(4,4), interpolation='bilinear')(scale_2_out)
 
-    x = UpSampling2D(data_format='channels_last', name="UpSample4")(x)
+    x = Conv2DTranspose(64, (2, 2), strides=(2, 2), data_format='channels_last', name="ConvTranspose4")(x)
 
-    x = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_5_1", activation='relu')(x)
-    x = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_5_2", activation='relu')(x)
-    x = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_5_3", activation='relu')(x)
+    x = Conv2D(64, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_5_1", activation='relu')(x)
+    x = Conv2D(64, kernel_size=3, strides=1, data_format='channels_last', padding='same', name="DecoderCov_Block_5_2", activation='relu')(x)
     
-    scale_1_out = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock_Scale1")(x)
+    scale_1_out = Conv2D(64, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock_Scale1")(x)
     scale_1_out = Conv2D(outputChannels, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="OutputConvBlock_Scale1")(scale_1_out)
     scale_1_out = UpSampling2D(data_format='channels_last', name="upSampleSclae1Out", size=(2,2), interpolation='bilinear')(scale_1_out)
     
-    x = UpSampling2D(data_format='channels_last', name="UpSample5")(x)
+    x = Conv2DTranspose(64, (2, 2), strides=(2, 2), data_format='channels_last', name="ConvTranspose5")(x)
 
-    x = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock1", activation='relu')(x)
-    x = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock2", activation='relu')(x)
-    x = Conv2D(32, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock3", activation='relu')(x)
+    x = Conv2D(64, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock1", activation='relu')(x)
+    x = Conv2D(64, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock2", activation='relu')(x)
     x = Conv2D(outputChannels, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="OutputConvBlock", activation='sigmoid')(x)
     
     return x, scale_1_out, scale_2_out, scale_3_out

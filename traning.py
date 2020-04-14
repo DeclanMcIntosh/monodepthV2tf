@@ -10,8 +10,8 @@ from modelDef import create_monoDepth_Model
 from lossFunctions import monoDepthV2Loss
 from dataGen import depthDataGenerator
 
-training_generator = depthDataGenerator('../validate/left/','../validate/right/',batch_size=8)
-testing_generator  = depthDataGenerator('../validate/left/', '../validate/right/',batch_size=8)
+training_generator = depthDataGenerator('../validate/left/','../validate/right/',batch_size=8, shuffle=False)
+testing_generator  = depthDataGenerator('../test/left/', '      ../test/right/', batch_size=8, shuffle=False)
 
 loss = monoDepthV2Loss(0.5,0.5,640,192).applyLoss
 
@@ -20,5 +20,5 @@ model.compile(optimizer='adam',loss=loss)
 #model.compile(optimizer='adam',loss={'OutputConvBlock' : loss, 'upSampleSclae1Out': loss,\
 #            'upSampleSclae2Out': loss, 'upSampleSclae3Out': loss})
 
-model.fit_generator(training_generator)
+model.fit_generator(training_generator, epochs = 100)
 

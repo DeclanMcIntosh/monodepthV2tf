@@ -127,6 +127,8 @@ class depthDataGenerator(keras.utils.Sequence):
             if word.startswith(prefixes):
                 leftImgs.remove(word)
 
+        self.inputs = []
+
         debugCount = 0
         debugBadCount = 0
         for leftImageName in leftImgs:
@@ -151,7 +153,8 @@ class depthDataGenerator(keras.utils.Sequence):
                 else:
                     debugBadCount += 1
         if self.shuffle:
-            random.shuffle(self.inputs)         
+            random.shuffle(self.inputs)      
+        print("")
         print("")
 
 
