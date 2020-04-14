@@ -91,17 +91,21 @@ def photoMetric(disp, left, right):
     right_f_referance_to_projected_2 = K.gather(right_f_2, intReferances)
 
     # get difference between original left and right images
-    diffDirect      = K.abs(left_f_0 - right_f_0) + K.abs(left_f_1 - right_f_1) + K.abs(left_f_2 - right_f_2)/3.
+    diffDirect      = (K.abs(left_f_0 - right_f_0) * (right_referances - indicies) 
+                    +  K.abs(left_f_1 - right_f_1) * (right_referances - indicies) 
+                    +  K.abs(left_f_2 - right_f_2) * (right_referances - indicies))/3.
 
     #test3 =  K.eval(diffDirect)
     # get difference between right and left reprojected images
 
-    diffReproject   =     K.abs(left_f_0 + right_f_referance_to_projected_0) * (right_referances - indicies) \
-                        + K.abs(left_f_1 - right_f_referance_to_projected_1) * (right_referances - indicies) \
-                        + K.abs(left_f_2 - right_f_referance_to_projected_2) * (right_referances - indicies) /3.
+    diffReproject   =   ( K.abs(left_f_0 + right_f_referance_to_projected_0) * K.abs(right_referances - K.cast(intReferances, 'float32')) \
+                        + K.abs(left_f_1 - right_f_referance_to_projected_1) * K.abs(right_referances - K.cast(intReferances, 'float32')) \
+                        + K.abs(left_f_2 - right_f_referance_to_projected_2) * K.abs(right_referances - K.cast(intReferances, 'float32')) ) /3.
+
+    return K.mean(right_f_referance_to_projected_0 * K.abs(right_referances - K.cast(intReferances, 'float32')))
     #test4 = K.eval(diffReproject)
     # develop mask for loss where the repojected loss is better than the direct comparision loss
-    minMask = K.cast(K.less(diffReproject, diffDirect), 'float32')
+    minMask = K.less(diffReproject, diffDirect)
     #test5 = K.eval(minMask)
     # apply mask
     out = (diffReproject/255.) * minMask
