@@ -1,5 +1,5 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="-1"
 import tensorflow as tf
 import keras 
 import cv2
@@ -10,8 +10,8 @@ from modelDef import create_monoDepth_Model
 from lossFunctions import monoDepthV2Loss
 from dataGen import depthDataGenerator
 
-training_generator = depthDataGenerator('../validate/left/','../validate/right/',batch_size=8)
-testing_generator  = depthDataGenerator('../validate/left/', '../validate/right/',batch_size=8)
+training_generator = depthDataGenerator('../validate/left/','../validate/right/',batch_size=1)
+testing_generator  = depthDataGenerator('../validate/left/', '../validate/right/',batch_size=1)
 
 loss = monoDepthV2Loss(0.5,0.5,640,192).applyLoss
 
@@ -22,6 +22,3 @@ model.compile(optimizer='adam',loss=loss)
 
 model.fit_generator(training_generator)
 
-
-#962560
-#122880

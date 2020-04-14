@@ -105,6 +105,11 @@ class depthDataGenerator(keras.utils.Sequence):
             outY_2[_] =  np.transpose(right,            axes=[1,0,2])
             outY_3[_] =  np.transpose(right_plus,       axes=[1,0,2])
 
+            #test_out = np.transpose(left_augmented,     axes=[1,0,2])
+
+            #cv2.imshow('test', test_out)
+            #cv2.waitKey(-1)
+
             outY = np.concatenate([outY_0,outY_1,outY_2,outY_3], axis=3)
 
         return outX, outY#[outY_0, outY_1, outY_2, outY_3]
