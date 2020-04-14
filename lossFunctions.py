@@ -93,27 +93,26 @@ def photoMetric(disp, left, right):
     right_f_referance_to_projected_2 = K.gather(right_f_2, intReferances)
 
     # get difference between original left and right images
-    diffDirect      = (K.abs(left_f_0 - right_f_0) * (right_referances - indicies) 
-                    +  K.abs(left_f_1 - right_f_1) * (right_referances - indicies) 
-                    +  K.abs(left_f_2 - right_f_2) * (right_referances - indicies))/3.
+    diffDirect      = (K.abs(left_f_0 - right_f_0) 
+                    +  K.abs(left_f_1 - right_f_1) 
+                    +  K.abs(left_f_2 - right_f_2))/3.
 
     # develop mask for loss where the repojected loss is better than the direct comparision loss
     # minMask = K.cast(K.less(diffReproject, diffDirect), 'float32')
 
-    diffReproject   =   ( K.abs(left_f_0 - right_f_referance_to_projected_0) * K.abs(right_referances - K.cast(intReferances, 'float32')) \
-                        + K.abs(left_f_1 - right_f_referance_to_projected_1) * K.abs(right_referances - K.cast(intReferances, 'float32')) \
-                        + K.abs(left_f_2 - right_f_referance_to_projected_2) * K.abs(right_referances - K.cast(intReferances, 'float32')) ) /3.
+    diffReproject   =   ( K.abs(left_f_0 - right_f_referance_to_projected_0) \
+                        + K.abs(left_f_1 - right_f_referance_to_projected_1) \
+                        + K.abs(left_f_2 - right_f_referance_to_projected_2) ) /3.
 
     #return K.mean(right_f_referance_to_projected_0 * K.abs(right_referances - K.cast(intReferances, 'float32'))) #works
-    return K.mean(right_f_referance_to_projected_0 * right_referances + left_f_0 * K.cast(intReferances, 'float32')) #no works see below
+    #return K.mean(right_f_referance_to_projected_0 * right_referances + left_f_0 * K.cast(intReferances, 'float32')) #no works see below
     #return K.mean((left_f_1 - right_f_referance_to_projected_1) * K.abs(right_referances - K.cast(intReferances, 'float32'))) # no works, left is wrong size on 1920 wide not 122880 as expected
 
     #test4 = K.eval(diffReproject)
     # develop mask for loss where the repojected loss is better than the direct comparision loss
     minMask = K.less(diffReproject, diffDirect)
-    #test5 = K.eval(minMask)
     # apply mask
-    out = (diffReproject/255.) * minMask
+    out = (diffReproject/255.) * K.cast(minMask, 'float32') * (right_referances - right_referances + 1)
 
     # determine mean and normalize 
     return (K.sum(out) / K.cast(tf.math.count_nonzero(out),dtype='float32'))
