@@ -12,7 +12,6 @@ TODO:
 import keras
 import keras.backend as K
 import tensorflow as tf
-import cv2
 
 
 def findGradients(y_predicted, leftImgPyramid):
@@ -73,7 +72,7 @@ def photoMetric(disp, left, right):
     left_f_2 =   K.flatten( left[:,:,2])
     right_f_2 =  K.flatten(right[:,:,2])
 
-    h,w = disp.shape
+    disp_shape = K.shape(disp)
 
     # find the self-referantiatl indicies in the tensor
     indicies = K.arange(0,K.shape(disp_f)[0], dtype='float32')
@@ -90,6 +89,8 @@ def photoMetric(disp, left, right):
     # offset the indicies by the disparities to make the reprojection referances for the left image
     #right_referances = K.clip(K.update_add(indicies, disp_f * -1 * K.shape(disp_f)[0]), 0, K.shape(disp_f)[0])
     right_referances = K.clip(indicies + (disp_f * -1 * w), 0, w*h)
+
+    right_referances = K.clip(indicies + (disp_f * -1 * K.cast(disp_shape[1], 'float32')), 0, K.eval(disp_shape[0]*disp_shape[1]))
 
     #test1 = K.eval(right_referances)
     # OK TO THIS POINT NO GRADS GET LOST
@@ -178,6 +179,7 @@ get averaging along scales working, get final loss
 test
 '''
 
+# import cv2
 # if __name__ == "__main__":
 #     print('Importing sample images...')
 #     left_path = '../Photometric Loss Sample/2018-10-17-14-35-33_2018-10-17-14-36-11_359_left.jpg'
@@ -187,9 +189,9 @@ test
 
 #     leftImg = cv2.imread(left_path)
     
-#     left        = cv2.resize(cv2.imread(left_path), dsize=image_size)
-#     right       = cv2.resize(cv2.imread(right_path), dsize=image_size)
-#     disp        = cv2.resize(cv2.imread(disp_path, cv2.IMREAD_UNCHANGED), dsize=image_size)
+#     left        = cv2.resize(cv2.imread(left_path), dsize=image_size).astype('float32')
+#     right       = cv2.resize(cv2.imread(right_path), dsize=image_size).astype('float32')
+#     disp        = cv2.resize(cv2.imread(disp_path, cv2.IMREAD_UNCHANGED), dsize=image_size).astype('float32')
 
 #     out = photoMetric(disp, left, right)
 
