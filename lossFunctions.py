@@ -65,12 +65,12 @@ def photoMetric(disp, left, right):
 
     # Flatten and seperate out channels
     disp_f =     K.flatten(disp)
-    left_f_0 =   K.flatten( left[:,:,0]) 
-    right_f_0 =  K.flatten(right[:,:,0])
-    left_f_1 =   K.flatten( left[:,:,1])
-    right_f_1 =  K.flatten(right[:,:,1])
-    left_f_2 =   K.flatten( left[:,:,2])
-    right_f_2 =  K.flatten(right[:,:,2])
+    left_f_0 =   K.flatten( left[:,:,:,0]) 
+    right_f_0 =  K.flatten(right[:,:,:,0])
+    left_f_1 =   K.flatten( left[:,:,:,1])
+    right_f_1 =  K.flatten(right[:,:,:,1])
+    left_f_2 =   K.flatten( left[:,:,:,2])
+    right_f_2 =  K.flatten(right[:,:,:,2])
 
     disp_shape = K.shape(disp)
 
@@ -88,9 +88,9 @@ def photoMetric(disp, left, right):
 
     # offset the indicies by the disparities to make the reprojection referances for the left image
     #right_referances = K.clip(K.update_add(indicies, disp_f * -1 * K.shape(disp_f)[0]), 0, K.shape(disp_f)[0])
-    right_referances = K.clip(indicies + (disp_f * -1 * w), 0, w*h)
+    right_referances = K.clip(indicies + (disp_f * -1 * 640), 0, 640*192)
 
-    right_referances = K.clip(indicies + (disp_f * -1 * K.cast(disp_shape[1], 'float32')), 0, K.eval(disp_shape[0]*disp_shape[1]))
+    #right_referances = K.clip(indicies + (disp_f * -1 * K.cast(disp_shape[1], 'float32')), 0, K.eval(disp_shape[0]*disp_shape[1]))
 
     #test1 = K.eval(right_referances)
     # OK TO THIS POINT NO GRADS GET LOST
@@ -129,8 +129,8 @@ def photoMetric(disp, left, right):
                         + K.abs(left_f_1 - right_f_referance_to_projected_1) * K.abs(right_referances - K.cast(intReferances, 'float32')) \
                         + K.abs(left_f_2 - right_f_referance_to_projected_2) * K.abs(right_referances - K.cast(intReferances, 'float32')) ) /3.
 
-    return K.mean(right_f_referance_to_projected_0 * K.abs(right_referances - K.cast(intReferances, 'float32'))) #works
-    #return K.mean(right_f_referance_to_projected_0 * right_referances + left_f_0 * K.cast(intReferances, 'float32')) #no works see below
+    #return K.mean(right_f_referance_to_projected_0 * K.abs(right_referances - K.cast(intReferances, 'float32'))) #works
+    return K.mean(right_f_referance_to_projected_0 * right_referances + left_f_0 * K.cast(intReferances, 'float32')) #no works see below
     #return K.mean((left_f_1 - right_f_referance_to_projected_1) * K.abs(right_referances - K.cast(intReferances, 'float32'))) # no works, left is wrong size on 1920 wide not 122880 as expected
 
 
@@ -155,9 +155,10 @@ class monoDepthV2Loss():
 
     def applyLoss(self, y_true, y_pred):
         # rename and split values
-        left        = y_true[:,:,:,0:3]
-        right_minus = y_true[:,:,:,3:6]
-        right       = y_true[:,:,:,6:9]
+        # [channel!, ?, width, heigt]?
+        left        = y_true[:,:,:,0:3 ]
+        right_minus = y_true[:,:,:,3:6 ]
+        right       = y_true[:,:,:,6:9 ]
         right_plus  = y_true[:,:,:,9:12]
 
         disp        = y_pred
