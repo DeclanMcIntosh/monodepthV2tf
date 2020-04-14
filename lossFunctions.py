@@ -12,6 +12,7 @@ TODO:
 import keras
 import keras.backend as K
 import tensorflow as tf
+import config
 
 
 def findGradients(y_predicted, leftImgPyramid):
@@ -72,19 +73,14 @@ def photoMetric(disp, left, right):
     left_f_2 =   K.flatten( left[:,:,:,2])
     right_f_2 =  K.flatten(right[:,:,:,2])
 
-    disp_shape = K.shape(disp)
-
     # find the self-referantiatl indicies in the tensor
     indicies = K.arange(0,K.shape(disp_f)[0], dtype='float32')
 
     # offset the indicies by the disparities to make the reprojection referances for the left image
-    right_referances = K.clip(indicies + (disp_f * -1 * 640), 0, 640*192)
-
-    #right_referances = K.clip(indicies + (disp_f * -1 * K.cast(disp_shape[1], 'float32')), 0, K.eval(disp_shape[0]*disp_shape[1]))
+    right_referances = K.clip(indicies + (disp_f * -1 * config.img_width), 0, config.img_width*config.img_height)
 
     # OK TO THIS POINT NO GRADS GET LOST
     intReferances = K.cast(tf.floor(right_referances), 'int32')
-
 
     # gather the values to creat the left re-projected images
     right_f_referance_to_projected_0 = K.gather(right_f_0, intReferances) # not differentiable due to cast operation
