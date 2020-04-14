@@ -12,6 +12,7 @@ TODO:
 import keras
 import keras.backend as K
 import tensorflow as tf
+import cv2
 
 
 def findGradients(y_predicted, leftImgPyramid):
@@ -78,10 +79,22 @@ def photoMetric(disp, left, right):
     # find the self-referantiatl indicies in the tensor
     indicies = K.arange(0,K.shape(disp_f)[0], dtype='float32')
 
+    with tf.Session() as sess:
+        print(sess.run(disp_f))
+        print(sess.run(left_f_0))
+        print(sess.run(left_f_1))
+        print(sess.run(left_f_2))
+        print(sess.run(right_f_0))
+        print(sess.run(right_f_1))
+        print(sess.run(right_f_2))
+
     # offset the indicies by the disparities to make the reprojection referances for the left image
     #right_referances = K.clip(K.update_add(indicies, disp_f * -1 * K.shape(disp_f)[0]), 0, K.shape(disp_f)[0])
     right_referances = K.clip(indicies + (disp_f * -1 * w), 0, w*h)
     # OK TO THIS POINT NO GRADS GET LOST
+
+    with tf.Session() as sess:
+        print(sess.run(right_referances))
 
     # gather the values to creat the left re-projected images
     right_f_referance_to_projected_0 = K.gather(right_f_0, K.cast(tf.floor(right_referances), 'int32')) # not differentiable due to cast operation
@@ -92,11 +105,20 @@ def photoMetric(disp, left, right):
     # get difference between original left and right images
     diffDirect      = K.abs(left_f_0 - right_f_0) + K.abs(left_f_1 - right_f_1) + K.abs(left_f_2 - right_f_2)/3.
 
+    with tf.Session() as sess:
+        print(sess.run(diffDirect))
+
     # get difference between right and left reprojected images
     diffReproject   = K.abs(left_f_0 - right_f_referance_to_projected_0) + K.abs(left_f_1 - right_f_referance_to_projected_1) + K.abs(left_f_2 - right_f_referance_to_projected_2)/3.
 
+    with tf.Session() as sess:
+        print(sess.run(diffReproject))
+
     # develop mask for loss where the repojected loss is better than the direct comparision loss
     minMask = K.cast(K.less(diffReproject, diffDirect), 'float32')
+
+    with tf.Session() as sess:
+        print(sess.run(minMask))
 
     # apply mask
     out = (diffReproject/255.) * minMask
@@ -136,3 +158,20 @@ get averaging along scales working, get final loss
 
 test
 '''
+
+if __name__ == "__main__":
+    print('Importing sample images...')
+    left_path = '../Photometric Loss Sample/2018-10-17-14-35-33_2018-10-17-14-36-11_359_left.jpg'
+    right_path = '../Photometric Loss Sample/2018-10-17-14-35-33_2018-10-17-14-36-11-359_right.jpg'
+    disp_path = '../Photometric Loss Sample/2018-10-17-14-35-33_2018-10-17-14-36-11-359.png'
+    image_size=(640,192)
+
+    leftImg = cv2.imread(left_path)
+    
+    left        = cv2.resize(cv2.imread(left_path), dsize=image_size)
+    right       = cv2.resize(cv2.imread(right_path), dsize=image_size)
+    disp        = cv2.resize(cv2.imread(disp_path, cv2.IMREAD_UNCHANGED), dsize=image_size)
+
+    out = photoMetric(disp, left, right)
+
+    print(out)
