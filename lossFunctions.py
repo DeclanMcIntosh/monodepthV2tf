@@ -170,24 +170,24 @@ test
 
 #     print(out)
 
-if __name__ == "__main__":
-    leftImage  = '../validate/left/2018-07-09-16-11-56_2018-07-09-16-11-56-502.jpg'
-    dispImage  = '../validate/disp/2018-07-09-16-11-56_2018-07-09-16-11-56-502.png'
-    rightImage = '../validate/right/2018-07-09-16-11-56_2018-07-09-16-11-56-502.jpg'
+# if __name__ == "__main__":
+#     leftImage  = '../validate/left/2018-07-09-16-11-56_2018-07-09-16-11-56-502.jpg'
+#     dispImage  = '../validate/disp/2018-07-09-16-11-56_2018-07-09-16-11-56-502.png'
+#     rightImage = '../validate/right/2018-07-09-16-11-56_2018-07-09-16-11-56-502.jpg'
 
-    import numpy as np
+#     import numpy as np
 
-    left  = np.transpose(cv2.imread(leftImage),    axes=[1,0,2]).astype('float32')
-    disp  = np.transpose(cv2.imread(dispImage),    axes=[1,0,2]).astype('float32') / 256.
-    right = np.transpose(cv2.imread(rightImage),   axes=[1,0,2]).astype('float32')
+#     left  = np.transpose(cv2.imread(leftImage),    axes=[1,0,2]).astype('float32')
+#     disp  = np.transpose(cv2.imread(dispImage),    axes=[1,0,2]).astype('float32') / 256.
+#     right = np.transpose(cv2.imread(rightImage),   axes=[1,0,2]).astype('float32')
 
-    leftImage_tensor  = tf.convert_to_tensor(left)
-    rightImage_tensor = tf.convert_to_tensor(right)
-    dispImage_tensor  = tf.convert_to_tensor(disp[:,:,0])
+#     leftImage_tensor  = tf.convert_to_tensor(left)
+#     rightImage_tensor = tf.convert_to_tensor(right)
+#     dispImage_tensor  = tf.convert_to_tensor(disp[:,:,0])
 
-    Lp = photoMetric(dispImage_tensor, leftImage_tensor, rightImage_tensor)
+#     Lp = photoMetric(dispImage_tensor, leftImage_tensor, rightImage_tensor)
 
-    print(K.eval(Lp))
+#     print(K.eval(Lp))
 
 
 
