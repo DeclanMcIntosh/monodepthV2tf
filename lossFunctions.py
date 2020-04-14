@@ -12,6 +12,7 @@ TODO:
 import keras
 import keras.backend as K
 import tensorflow as tf
+import cv2
 
 
 def findGradients(y_predicted, leftImgPyramid):
@@ -41,7 +42,6 @@ def findGradients(y_predicted, leftImgPyramid):
     smoothness_x = [dispGradientX[i] * weightX[i] for i in range(4)]
     smoothness_y = [dispGradientY[i] * weightY[i] for i in range(4)]
     return smoothness_x + smoothness_y
-
 
 def smoothnessLoss(y_predicted, leftImage):
     '''
@@ -79,23 +79,30 @@ def photoMetric(disp, left, right):
     # offset the indicies by the disparities to make the reprojection referances for the left image
     #right_referances = K.clip(K.update_add(indicies, disp_f * -1 * K.shape(disp_f)[0]), 0, K.shape(disp_f)[0])
     right_referances = K.clip(indicies + (disp_f * -1 * 640), 0, 640*192)
+
+    #test1 = K.eval(right_referances)
     # OK TO THIS POINT NO GRADS GET LOST
+    intReferances = K.cast(tf.floor(right_referances), 'int32')
 
     # gather the values to creat the left re-projected images
-    right_f_referance_to_projected_0 = K.gather(right_f_0, K.cast(tf.floor(right_referances), 'int32')) # not differentiable due to cast operation
-    right_f_referance_to_projected_1 = K.gather(right_f_1, K.cast(tf.floor(right_referances), 'int32'))
-    right_f_referance_to_projected_2 = K.gather(right_f_2, K.cast(tf.floor(right_referances), 'int32'))
+    right_f_referance_to_projected_0 = K.gather(right_f_0, intReferances) # not differentiable due to cast operation
+    #test2 = K.eval(right_referances)
+    right_f_referance_to_projected_1 = K.gather(right_f_1, intReferances)
+    right_f_referance_to_projected_2 = K.gather(right_f_2, intReferances)
 
-    return K.mean(right_referances)
     # get difference between original left and right images
     diffDirect      = K.abs(left_f_0 - right_f_0) + K.abs(left_f_1 - right_f_1) + K.abs(left_f_2 - right_f_2)/3.
 
+    #test3 =  K.eval(diffDirect)
     # get difference between right and left reprojected images
-    diffReproject   = K.abs(left_f_0 - right_f_referance_to_projected_0) + K.abs(left_f_1 - right_f_referance_to_projected_1) + K.abs(left_f_2 - right_f_referance_to_projected_2)/3.
 
+    diffReproject   =     K.abs(left_f_0 + right_f_referance_to_projected_0) * (right_referances - indicies) \
+                        + K.abs(left_f_1 - right_f_referance_to_projected_1) * (right_referances - indicies) \
+                        + K.abs(left_f_2 - right_f_referance_to_projected_2) * (right_referances - indicies) /3.
+    #test4 = K.eval(diffReproject)
     # develop mask for loss where the repojected loss is better than the direct comparision loss
     minMask = K.cast(K.less(diffReproject, diffDirect), 'float32')
-
+    #test5 = K.eval(minMask)
     # apply mask
     out = (diffReproject/255.) * minMask
 
@@ -121,6 +128,7 @@ class monoDepthV2Loss():
         # up-sample disparities by a nearest interpolation scheme for comparision at highest resolution per alrogithm
 
         #L_s = smoothnessLoss(y_pred, left)
+        #smoothnessLoss(disp,left)
 
         L_p  = photoMetric(disp,left,right)
         #L_p = K.mean(disp) # switching to this fixes out of bounds issue, will check to see if i can get this working 
@@ -134,3 +142,27 @@ get averaging along scales working, get final loss
 
 test
 '''
+
+
+if __name__ == "__main__":
+    leftImage  = '../validate/left/2018-07-09-16-11-56_2018-07-09-16-11-56-502.jpg'
+    dispImage  = '../validate/disp/2018-07-09-16-11-56_2018-07-09-16-11-56-502.png'
+    rightImage = '../validate/right/2018-07-09-16-11-56_2018-07-09-16-11-56-502.jpg'
+
+    import numpy as np
+
+    left  = np.transpose(cv2.imread(leftImage),    axes=[1,0,2]).astype('float32')
+    disp  = np.transpose(cv2.imread(dispImage),    axes=[1,0,2]).astype('float32') / 256.
+    right = np.transpose(cv2.imread(rightImage),   axes=[1,0,2]).astype('float32')
+
+    leftImage_tensor  = tf.convert_to_tensor(left)
+    rightImage_tensor = tf.convert_to_tensor(right)
+    dispImage_tensor  = tf.convert_to_tensor(disp[:,:,0])
+
+    Lp = photoMetric(dispImage_tensor, leftImage_tensor, rightImage_tensor)
+
+    print(K.eval(Lp))
+
+
+
+

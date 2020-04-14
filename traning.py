@@ -22,6 +22,3 @@ model.compile(optimizer='adam',loss=loss)
 
 model.fit_generator(training_generator)
 
-
-#962560
-#122880
