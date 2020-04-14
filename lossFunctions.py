@@ -98,11 +98,16 @@ def photoMetric(disp, left, right):
     #test3 =  K.eval(diffDirect)
     # get difference between right and left reprojected images
 
-    diffReproject   =   ( K.abs(left_f_0 + right_f_referance_to_projected_0) * K.abs(right_referances - K.cast(intReferances, 'float32')) \
+    diffReproject   =   ( K.abs(left_f_0 - right_f_referance_to_projected_0) * K.abs(right_referances - K.cast(intReferances, 'float32')) \
                         + K.abs(left_f_1 - right_f_referance_to_projected_1) * K.abs(right_referances - K.cast(intReferances, 'float32')) \
                         + K.abs(left_f_2 - right_f_referance_to_projected_2) * K.abs(right_referances - K.cast(intReferances, 'float32')) ) /3.
 
-    return K.mean(right_f_referance_to_projected_0 * K.abs(right_referances - K.cast(intReferances, 'float32')))
+    return K.mean(right_f_referance_to_projected_0 * K.abs(right_referances - K.cast(intReferances, 'float32'))) #works
+    #return K.mean(right_f_referance_to_projected_0 * right_referances + left_f_0 * K.cast(intReferances, 'float32')) #no works see below
+    #return K.mean((left_f_1 - right_f_referance_to_projected_1) * K.abs(right_referances - K.cast(intReferances, 'float32'))) # no works, left is wrong size on 1920 wide not 122880 as expected
+
+
+
     #test4 = K.eval(diffReproject)
     # develop mask for loss where the repojected loss is better than the direct comparision loss
     minMask = K.less(diffReproject, diffDirect)
