@@ -77,27 +77,14 @@ def photoMetric(disp, left, right):
     # find the self-referantiatl indicies in the tensor
     indicies = K.arange(0,K.shape(disp_f)[0], dtype='float32')
 
-    # with tf.Session() as sess:
-    #     print(sess.run(disp_f))
-    #     print(sess.run(left_f_0))
-    #     print(sess.run(left_f_1))
-    #     print(sess.run(left_f_2))
-    #     print(sess.run(right_f_0))
-    #     print(sess.run(right_f_1))
-    #     print(sess.run(right_f_2))
-
     # offset the indicies by the disparities to make the reprojection referances for the left image
-    #right_referances = K.clip(K.update_add(indicies, disp_f * -1 * K.shape(disp_f)[0]), 0, K.shape(disp_f)[0])
     right_referances = K.clip(indicies + (disp_f * -1 * 640), 0, 640*192)
 
     #right_referances = K.clip(indicies + (disp_f * -1 * K.cast(disp_shape[1], 'float32')), 0, K.eval(disp_shape[0]*disp_shape[1]))
 
-    #test1 = K.eval(right_referances)
     # OK TO THIS POINT NO GRADS GET LOST
     intReferances = K.cast(tf.floor(right_referances), 'int32')
 
-    # with tf.Session() as sess:
-    #     print(sess.run(right_referances))
 
     # gather the values to creat the left re-projected images
     right_f_referance_to_projected_0 = K.gather(right_f_0, intReferances) # not differentiable due to cast operation
@@ -110,20 +97,8 @@ def photoMetric(disp, left, right):
                     +  K.abs(left_f_1 - right_f_1) * (right_referances - indicies) 
                     +  K.abs(left_f_2 - right_f_2) * (right_referances - indicies))/3.
 
-    # with tf.Session() as sess:
-    #     print(sess.run(diffDirect))
-
-    #test3 =  K.eval(diffDirect)
-    # get difference between right and left reprojected images
-
-    # with tf.Session() as sess:
-    #     print(sess.run(diffReproject))
-
     # develop mask for loss where the repojected loss is better than the direct comparision loss
     # minMask = K.cast(K.less(diffReproject, diffDirect), 'float32')
-
-    # with tf.Session() as sess:
-    #     print(sess.run(minMask))
 
     diffReproject   =   ( K.abs(left_f_0 - right_f_referance_to_projected_0) * K.abs(right_referances - K.cast(intReferances, 'float32')) \
                         + K.abs(left_f_1 - right_f_referance_to_projected_1) * K.abs(right_referances - K.cast(intReferances, 'float32')) \
@@ -132,8 +107,6 @@ def photoMetric(disp, left, right):
     #return K.mean(right_f_referance_to_projected_0 * K.abs(right_referances - K.cast(intReferances, 'float32'))) #works
     return K.mean(right_f_referance_to_projected_0 * right_referances + left_f_0 * K.cast(intReferances, 'float32')) #no works see below
     #return K.mean((left_f_1 - right_f_referance_to_projected_1) * K.abs(right_referances - K.cast(intReferances, 'float32'))) # no works, left is wrong size on 1920 wide not 122880 as expected
-
-
 
     #test4 = K.eval(diffReproject)
     # develop mask for loss where the repojected loss is better than the direct comparision loss
