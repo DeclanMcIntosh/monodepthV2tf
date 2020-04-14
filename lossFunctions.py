@@ -73,12 +73,14 @@ def photoMetric(disp, left, right):
     left_f_2 =   K.flatten( left[:,:,2])
     right_f_2 =  K.flatten(right[:,:,2])
 
+    h,w = disp.shape
+
     # find the self-referantiatl indicies in the tensor
     indicies = K.arange(0,K.shape(disp_f)[0], dtype='float32')
 
     # offset the indicies by the disparities to make the reprojection referances for the left image
     #right_referances = K.clip(K.update_add(indicies, disp_f * -1 * K.shape(disp_f)[0]), 0, K.shape(disp_f)[0])
-    right_referances = K.clip(indicies + (disp_f * -1 * 640), 0, 640*192)
+    right_referances = K.clip(indicies + (disp_f * -1 * w), 0, w*h)
     # OK TO THIS POINT NO GRADS GET LOST
 
     # gather the values to creat the left re-projected images
