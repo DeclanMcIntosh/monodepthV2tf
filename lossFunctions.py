@@ -50,11 +50,28 @@ def smoothnessLoss(y_predicted, leftImage):
 
         leftImage - Left Image
     '''
+
+    # y_predicted: (1,881,400,1)
+    # leftImage: (1, 881, 400, 3)
+
     # Create pyramid
-    GausBlurKernel = K.expand_dims(K.constant([[1/16,1/8,1/16],[1/8,1/4,1/8],[1/16,1/8,1/16]]), 0)
-    leftImgPyramid = K.expand_dims(K.mean(leftImage,axis=-1),-1) # convert to greyscale for gradients
+    GausBlurKernel = K.expand_dims(K.expand_dims(K.constant([[1/16,1/8,1/16],[1/8,1/4,1/8],[1/16,1/8,1/16]]), -1),-1)
+    # TF kernel shape: (rows, cols, input_depth, depth)
+    # If this is converted to TH, TH kernel shape: (depth, input_depth, rows, cols)
+    # GausBlurKernel (3,3)
+
+
+    leftImgPyramid = K.expand_dims(K.mean(leftImage,axis=-1),-1) # scale colours to greyscale for gradients
+    # leftImgPyramid (1, 881, 400, 1)
+
     #leftImgPyramid_1_down = K.conv2d(leftImgPyramid, GausBlurKernel, strides=tuple((1,1)), dilation_rate=tuple((1,1)))
     leftImgPyramid_1_down = K.conv2d(leftImgPyramid, GausBlurKernel)
+    # Given an input tensor of shape [batch, in_height, in_width, in_channels] and 
+    # a filter / kernel tensor of shape [filter_height, filter_width, in_channels, out_channels], this op performs the following: 
+    #   1. Flattens the filter to a 2-D matrix with shape [filter_height * filter_width * in_channels, output_channels].
+    #   2. Extracts image patches from the input tensor to form a virtual tensor of shape [batch, out_height, out_width, filter_height * filter_width * in_channels].
+    #   3. For each patch, right-multiplies the filter matrix and the image patch vector.
+
     leftImgPyramid_2_down = K.conv2d(leftImgPyramid_1_down, GausBlurKernel)
     leftImgPyramid_3_down = K.conv2d(leftImgPyramid_2_down , GausBlurKernel)
 
@@ -193,49 +210,49 @@ get batch size != 1 working
 
 if __name__ == "__main__":
 
-    #leftImage  = '../validate/left/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
-    #dispImage  = '../validate/disp/2018-07-16-15-37-46_2018-07-16-15-38-12-727.png' # actuall associated disparity
-    #dispImage1  = '../validate/disp/2018-07-16-15-37-46_2018-07-16-16-32-48-979.png' # bad disparity totally random
-    #rightImage = '../validate/right/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
-
-    leftImage  = '../validate/left/2018-07-09-16-11-56_2018-07-09-16-11-56-502.jpg'
-    dispImage  = '../validate/disp/2018-07-09-16-11-56_2018-07-09-16-11-56-502.png' # actuall associated disparity
+    leftImage  = '../validate/left/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
+    dispImage  = '../validate/disp/2018-07-16-15-37-46_2018-07-16-15-38-12-727.png' # actuall associated disparity
     dispImage1  = '../validate/disp/2018-07-16-15-37-46_2018-07-16-16-32-48-979.png' # bad disparity totally random
-    rightImage = '../validate/right/2018-07-09-16-11-56_2018-07-09-16-11-56-502.jpg'
+    rightImage = '../validate/right/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
+
+    # leftImage  = '../validate/left/2018-07-09-16-11-56_2018-07-09-16-11-56-502.jpg'
+    # dispImage  = '../validate/disp/2018-07-09-16-11-56_2018-07-09-16-11-56-502.png' # actuall associated disparity
+    # dispImage1  = '../validate/disp/2018-07-16-15-37-46_2018-07-16-16-32-48-979.png' # bad disparity totally random
+    # rightImage = '../validate/right/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
 
     import numpy as np
     import cv2
 
-    #left  = np.transpose(cv2.imread(leftImage),     axes=[1,0,2]).astype('float32')
-    #disp  = np.transpose(cv2.imread(dispImage),     axes=[1,0,2]).astype('float32')[:,:,0] / 256.
-    #dispO = np.transpose(cv2.imread(dispImage1),    axes=[1,0,2]).astype('float32')[:,:,0] / 256.
-    #right = np.transpose(cv2.imread(rightImage),    axes=[1,0,2]).astype('float32')
+    left  = np.transpose(cv2.imread(leftImage),     axes=[1,0,2]).astype('float32')
+    dispTrue  = np.transpose(cv2.imread(dispImage),     axes=[1,0,2]).astype('float32')[:,:,0] / 256.
+    dispWrong = np.transpose(cv2.imread(dispImage1),    axes=[1,0,2]).astype('float32')[:,:,0] / 256.
+    right = np.transpose(cv2.imread(rightImage),    axes=[1,0,2]).astype('float32')
 
-    width = 100
-    height = 20
+    width = left.shape[0]
+    height = left.shape[1]
     realOffset = 3
 
-    memes = np.arange(0,width)
+    # memes = np.arange(0,width)
 
-    left      = np.zeros(shape=(width,height,3)).astype('float32')
-    right     = np.zeros(shape=(width,height,3)).astype('float32')
-    dispTrue  = np.full(shape=(width,height,1),  fill_value=realOffset).astype('float32')    / width 
-    dispWrong = np.full(shape=(width,height,1),  fill_value=realOffset -1).astype('float32') / width
+    # left      = np.zeros(shape=(width,height,3)).astype('float32')
+    # right     = np.zeros(shape=(width,height,3)).astype('float32')
+    # dispTrue  = np.full(shape=(width,height,1),  fill_value=realOffset).astype('float32')    / width 
+    # dispWrong = np.full(shape=(width,height,1),  fill_value=realOffset -1).astype('float32') / width
 
-    for _ in range(height):
-        left[:,_,0] = memes
-        left[:,_,1] = memes
-        left[:,_,2] = memes
+    # for _ in range(height):
+    #     left[:,_,0] = memes
+    #     left[:,_,1] = memes
+    #     left[:,_,2] = memes
 
-        right[0:width-realOffset,_,0] = memes[realOffset:]
-        right[0:width-realOffset,_,1] = memes[realOffset:]
-        right[0:width-realOffset,_,2] = memes[realOffset:]
+    #     right[0:width-realOffset,_,0] = memes[realOffset:]
+    #     right[0:width-realOffset,_,1] = memes[realOffset:]
+    #     right[0:width-realOffset,_,2] = memes[realOffset:]
 
     
-    left.reshape(1,  left.shape[0], left.shape[1], left.shape[2]  )
-    dispTrue.reshape(1,  dispTrue.shape[0], dispTrue.shape[1], 1)
-    dispWrong.reshape(1,  dispWrong.shape[0], dispWrong.shape[1], 1)
-    right.reshape(1, right.shape[0], right.shape[1], right.shape[2]  )
+    # left.reshape(1,  left.shape[0], left.shape[1], left.shape[2]  )
+    # dispTrue.reshape(1,  dispTrue.shape[0], dispTrue.shape[1], 1)
+    # dispWrong.reshape(1,  dispWrong.shape[0], dispWrong.shape[1], 1)
+    # right.reshape(1, right.shape[0], right.shape[1], right.shape[2]  )
     
     leftImage_tensor  = tf.expand_dims(tf.convert_to_tensor(left), 0)
     rightImage_tensor = tf.expand_dims(tf.convert_to_tensor(right), 0)
@@ -245,10 +262,10 @@ if __name__ == "__main__":
     Lp  = photoMetric(dispImage_tensor,  leftImage_tensor, rightImage_tensor, width, height, 1)
     Lp1 = photoMetric(dispImage_tensor1, leftImage_tensor, rightImage_tensor, width, height, 1)
 
-    print("good")
-    print(K.eval(Lp))
-    print("bad")
-    print(K.eval(Lp1))
+    # print("good")
+    # print(K.eval(Lp))
+    # print("bad")
+    # print(K.eval(Lp1))
 
     #disp1 = np.random.uniform(size=disp.shape).astype('float32')
 #
@@ -275,8 +292,6 @@ if __name__ == "__main__":
     #print("other")
     #print(K.eval(LpO))  
 
-    #print("smootheness good test")
-    #smoothness = smoothnessLoss(dispImage_tensor,leftImage_tensor[0,:,:])
-    #print(K.eval(smoothness))
-
-
+    print("smoothness good test")
+    smoothness = smoothnessLoss(dispImage_tensor,leftImage_tensor)
+    print(K.eval(smoothness))
