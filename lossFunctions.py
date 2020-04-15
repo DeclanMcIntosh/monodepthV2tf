@@ -12,6 +12,7 @@ TODO:
 import keras
 import keras.backend as K
 import tensorflow as tf
+import config
 
 
 def findGradients(y_predicted, leftImgPyramid):
@@ -75,19 +76,15 @@ def photoMetric(disp, left, right, width, height, batchsize):
     left_f_2 =   K.flatten( left[:,:,:,2])
     right_f_2 =  K.flatten(right[:,:,:,2])
 
-    disp_shape = K.shape(disp)
-
     # find the self-referantiatl indicies in the tensor
     indicies = K.arange(0,K.shape(disp_f)[0], dtype='float32')
 
     # offset the indicies by the disparities to make the reprojection referances for the left image
-    right_referances = K.clip(indicies + (disp_f * 1 * width), 0, width*height*batchsize)
 
-    #right_referances = K.clip(indicies + (disp_f * -1 * K.cast(disp_shape[1], 'float32')), 0, K.eval(disp_shape[0]*disp_shape[1]))
+    right_referances = K.clip(indicies + (disp_f * 1 * width), 0, width*height*batchsize)
 
     # OK TO THIS POINT NO GRADS GET LOST
     intReferances = K.cast(tf.floor(right_referances), 'int32')
-
 
     # gather the values to creat the left re-projected images
     right_f_referance_to_projected_0 = K.gather(right_f_0, intReferances) # not differentiable due to cast operation
@@ -151,24 +148,6 @@ get averaging along scales working, get final loss
 
 test
 '''
-
-# import cv2
-# if __name__ == "__main__":
-#     print('Importing sample images...')
-#     left_path = '../Photometric Loss Sample/2018-10-17-14-35-33_2018-10-17-14-36-11_359_left.jpg'
-#     right_path = '../Photometric Loss Sample/2018-10-17-14-35-33_2018-10-17-14-36-11-359_right.jpg'
-#     disp_path = '../Photometric Loss Sample/2018-10-17-14-35-33_2018-10-17-14-36-11-359.png'
-#     image_size=(640,192)
-
-#     leftImg = cv2.imread(left_path)
-    
-#     left        = cv2.resize(cv2.imread(left_path), dsize=image_size).astype('float32')
-#     right       = cv2.resize(cv2.imread(right_path), dsize=image_size).astype('float32')
-#     disp        = cv2.resize(cv2.imread(disp_path, cv2.IMREAD_UNCHANGED), dsize=image_size).astype('float32')
-
-#     out = photoMetric(disp, left, right)
-
-#     print(out)
 
 if __name__ == "__main__":
     leftImage  = '../validate/left/2018-07-09-16-11-56_2018-07-09-16-11-56-502.jpg'
