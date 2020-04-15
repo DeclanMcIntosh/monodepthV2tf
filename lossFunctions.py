@@ -139,6 +139,8 @@ class monoDepthV2Loss():
         K = take elementwise minimium between the reporjection losses
         mask with the minimum between the direct comparison and K 
 
+        using mu mask as defined in paper works poorly due to our samples being so seperated in time
+
         '''
         # rename and split values
         # [batch, width, height, channel]
@@ -162,7 +164,12 @@ class monoDepthV2Loss():
 
         mu_mask = K.cast(K.less(ReprojectedError, Direct), 'float32')
 
+        mu_mask_custom = K.sqrt(K.mean(K.square(right_minus - right), axis=-1))
+        mu_mask_custom = K.flatten(K.permute_dimensions( mu_mask_custom, pattern=(0,2,1)))
+        mu_mask_custom = K.cast(K.less(ReprojectedError, mu_mask_custom ), 'float32')
+
         #ReprojectedError = mu_mask * ReprojectedError 
+        ReprojectedError = mu_mask_custom * ReprojectedError 
 
         #L_p = K.mean(disp) # switching to this fixes out of bounds issue, will check to see if i can get this working 
         #return L_p* self.mu + L_s * self.lambda_
@@ -174,6 +181,8 @@ TODO
 get averaging along scales working, get final loss
 
 test
+
+get batch size != 1 working
 '''
 
 if __name__ == "__main__":

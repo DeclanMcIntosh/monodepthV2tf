@@ -28,7 +28,7 @@ def preprocess_input(image, randomVals):
         # increase/ decrease contrast
         image = np.uint8(np.clip(image * (0.8 + randomVals[2]/2.5), a_min=0, a_max=255))
     # Convert image to HSV for some transformations
-    hsv_image = np.int32(cv2.cvtColor(image, cv2.COLOR_BGR2HSV))
+    hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV).astype(np.int32)
     if randomVals[3] > 0.5:
         # change brightness of image
         hsv_image[:,:,2] += int(((randomVals[4]/2.5 )- 0.2 ) * 255.) 
@@ -63,7 +63,7 @@ class depthDataGenerator(keras.utils.Sequence):
         self.max_img_time_diff = max_img_time_diff
         self.agumentations = agumentations
         self.inputs = []
-        self.on_epoch_end()
+        self.initalSetup()
 
     def __len__(self):
         '''Denotes the number of batches per epoch'''
@@ -116,7 +116,11 @@ class depthDataGenerator(keras.utils.Sequence):
                         
 
     def on_epoch_end(self):
-        '''Updates indexes after each epoch'''
+        ''' Shuffle the data if that is required'''
+        if self.shuffle:
+            random.shuffle(self.inputs)   
+    
+    def initalSetup(self):
         '''We want only images that have corresponding right iamges and nearby right images'''
         #print("")
         leftImgs = os.listdir(self.left_dir)
@@ -149,14 +153,14 @@ class depthDataGenerator(keras.utils.Sequence):
                 if abs(left_img_1_time - t_minus_1_time) < self.max_img_time_diff and abs(left_img_1_time - t_plus_1_time) < self.max_img_time_diff:
                     self.inputs.append([leftImageName,t_minus_1_name,t_plus_1_name])
                     debugCount += 1
-                    #print("Found ", debugCount, " input image sets to use in ", self.left_dir, "  " , debugBadCount, "number of un-useable images", end='\r')
+                    print("Found ", debugCount, " input image sets to use in ", self.left_dir, "  " , debugBadCount, "number of un-useable images", end='\r')
                 else:
                     debugBadCount += 1
         if self.shuffle:
             random.shuffle(self.inputs)   
         #self.inputs = self.inputs[0:100]   
-        #print("")
-        #print("")
+        print("")
+        print("")
 
 
 
