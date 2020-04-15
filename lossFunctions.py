@@ -97,17 +97,23 @@ def photoMetric(disp, left, right, width, height, batchsize):
     right_f_referance_to_projected_2 = K.gather(right_f_2, intReferances)
 
     # get difference between original left and right images
-    L1Direct      = K.sqrt(  K.square(left_f_0 - right_f_0) 
-                          +  K.square(left_f_1 - right_f_1) 
-                          +  K.square(left_f_2 - right_f_2))
+    #L2Direct      = K.sqrt(  K.square(left_f_0 - right_f_0) 
+    #                      +  K.square(left_f_1 - right_f_1) 
+    #                      +  K.square(left_f_2 - right_f_2))
+    L1Direct =  K.abs((left_f_0 - right_f_0)) \
+              + K.abs((left_f_1 - right_f_1)) \
+              + K.abs((left_f_2 - right_f_2))
 
     # develop mask for loss where the repojected loss is better than the direct comparision loss
     # minMask = K.cast(K.less(diffReproject, diffDirect), 'float32')
 
-    L1Reproject = K.sqrt(   K.square(left_f_0 - right_f_referance_to_projected_0) \
-                          + K.square(left_f_1 - right_f_referance_to_projected_1) \
-                          + K.square(left_f_2 - right_f_referance_to_projected_2) ) 
-
+    #L2Reproject = K.sqrt(   K.square(left_f_0 - right_f_referance_to_projected_0) \
+    #                      + K.square(left_f_1 - right_f_referance_to_projected_1) \
+    #                      + K.square(left_f_2 - right_f_referance_to_projected_2) )
+ 
+    L1Reproject =   K.abs(left_f_0 - right_f_referance_to_projected_0) \
+                  + K.abs(left_f_1 - right_f_referance_to_projected_1) \
+                  + K.abs(left_f_2 - right_f_referance_to_projected_2) 
     #print("L1Direct Loss ", K.eval(K.mean(L1Direct)))
     #print("L1Repoject Loss ", K.eval(K.mean(L1Reproject)))
 
