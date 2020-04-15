@@ -50,9 +50,10 @@ def smoothnessLoss(y_predicted, leftImage):
         leftImage - Left Image
     '''
     # Create pyramid
-    GausBlurKernel = K.constant([[1/16,1/8,1/16],[1/8,1/4,1/8],[1/16,1/8,1/16]])
-    leftImgPyramid        = K.mean(leftImage,axis=2) # convert to greyscale for gradients
-    leftImgPyramid_1_down = K.conv2d(leftImgPyramid, GausBlurKernel, strides=tuple((1,1)), dilation_rate=tuple((1,1)))
+    GausBlurKernel = K.expand_dims(K.constant([[1/16,1/8,1/16],[1/8,1/4,1/8],[1/16,1/8,1/16]]), 0)
+    leftImgPyramid = K.expand_dims(K.mean(leftImage,axis=-1),-1) # convert to greyscale for gradients
+    #leftImgPyramid_1_down = K.conv2d(leftImgPyramid, GausBlurKernel, strides=tuple((1,1)), dilation_rate=tuple((1,1)))
+    leftImgPyramid_1_down = K.conv2d(leftImgPyramid, GausBlurKernel)
     leftImgPyramid_2_down = K.conv2d(leftImgPyramid_1_down, GausBlurKernel)
     leftImgPyramid_3_down = K.conv2d(leftImgPyramid_2_down , GausBlurKernel)
 
@@ -135,7 +136,7 @@ class monoDepthV2Loss():
         disp        = y_pred
         # up-sample disparities by a nearest interpolation scheme for comparision at highest resolution per alrogithm
 
-        #L_s = smoothnessLoss(y_pred, left)
+        L_s = smoothnessLoss(y_pred, left)
         #smoothnessLoss(disp,left)
 
         L_p  = photoMetric(disp,left,right, self.width, self.height, self.batchsize)
@@ -207,5 +208,8 @@ if __name__ == "__main__":
     print("other")
     print(K.eval(LpO))  
 
+    print("smootheness good test")
+    smoothness = smoothnessLoss(dispImage_tensor,leftImage_tensor[0,:,:])
+    print(K.eval(smoothness))
 
 
