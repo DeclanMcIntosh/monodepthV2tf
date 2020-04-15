@@ -118,7 +118,7 @@ class depthDataGenerator(keras.utils.Sequence):
     def on_epoch_end(self):
         '''Updates indexes after each epoch'''
         '''We want only images that have corresponding right iamges and nearby right images'''
-        print("")
+        #print("")
         leftImgs = os.listdir(self.left_dir)
         leftImgs.sort()
         
@@ -149,13 +149,14 @@ class depthDataGenerator(keras.utils.Sequence):
                 if abs(left_img_1_time - t_minus_1_time) < self.max_img_time_diff and abs(left_img_1_time - t_plus_1_time) < self.max_img_time_diff:
                     self.inputs.append([leftImageName,t_minus_1_name,t_plus_1_name])
                     debugCount += 1
-                    print("Found ", debugCount, " input image sets to use in ", self.left_dir, "  " , debugBadCount, "number of un-useable images", end='\r')
+                    #print("Found ", debugCount, " input image sets to use in ", self.left_dir, "  " , debugBadCount, "number of un-useable images", end='\r')
                 else:
                     debugBadCount += 1
         if self.shuffle:
-            random.shuffle(self.inputs)      
-        print("")
-        print("")
+            random.shuffle(self.inputs)   
+        #self.inputs = self.inputs[0:100]   
+        #print("")
+        #print("")
 
 
 
