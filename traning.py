@@ -10,10 +10,12 @@ from modelDef import create_monoDepth_Model
 from lossFunctions import monoDepthV2Loss
 from dataGen import depthDataGenerator
 
-training_generator = depthDataGenerator('../validate/left/','../validate/right/',batch_size=8, shuffle=False)
-testing_generator  = depthDataGenerator('../test/left/', '      ../test/right/', batch_size=8, shuffle=False)
+batchSize = 8
 
-loss = monoDepthV2Loss(0.5,0.5,640,192).applyLoss
+training_generator = depthDataGenerator('../validate/left/','../validate/right/',batch_size=batchSize, shuffle=False)
+testing_generator  = depthDataGenerator('../test/left/', '      ../test/right/', batch_size=batchSize, shuffle=False)
+
+loss = monoDepthV2Loss(0.5,0.5,640,192,batchSize).applyLoss
 
 model = create_monoDepth_Model(input_shape=(640,192,3), encoder_type=18)
 model.compile(optimizer='adam',loss=loss)
