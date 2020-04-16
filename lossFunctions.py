@@ -24,34 +24,36 @@ def findGradients(y_predicted, leftImgPyramid):
     '''
     # addapted from https://github.com/mtngld/monodepth-1/blob/1f1fc80ac0dc727f3de561ead89e6792aea5e178/monodepth_model.py#L109 
     def gradient_x(img):
-        gx = img[:,:,:-1,:] - img[:,:,1:,:]
+        gx = img[:,:-1,:-1,:] - img[:,:-1,1:,:] # truncate one off the height dimension
         return gx
     def gradient_y(img):
-        gy = img[:,:-1,:,:] - img[:,1:,:,:]
+        gy = img[:,:-1,:-1,:] - img[:,1:,:-1,:] # truncate one off the width dimension
         return gy
 
     # y_predicted: (1,881,400,1)
     # leftImgPyramid: (4 scales of (1,881-2n,400-2n,1) )
 
-    image_gradients_x = [gradient_x(img) for img in leftImgPyramid]
-    image_gradients_y = [gradient_y(img) for img in leftImgPyramid]
+    image_gradients_x = gradient_x(leftImgPyramid)
+    image_gradients_y = gradient_y(leftImgPyramid)
     
     dispGradientX = gradient_x(y_predicted)
     dispGradientY = gradient_y(y_predicted)
  
-    weightX = [K.exp(-K.mean(K.abs(g), 3, keepdims=True)) for g in image_gradients_x]
-    weightY = [K.exp(-K.mean(K.abs(g), 3, keepdims=True)) for g in image_gradients_y]
+    weightX = K.exp(-K.mean(K.abs(image_gradients_x), 3, keepdims=True))
+    weightY = K.exp(-K.mean(K.abs(image_gradients_y), 3, keepdims=True))
 
-    smoothness_x = [dispGradientX[i] * weightX[i] for i in range(4)]
-    smoothness_y = [dispGradientY[i] * weightY[i] for i in range(4)]
+    smoothness_x = dispGradientX * weightX
+    smoothness_y = dispGradientY * weightY
     return smoothness_x + smoothness_y
 
-def smoothnessLoss(y_predicted, leftImage):
+def smoothnessLoss(y_predicted, leftImage, numConv):
     '''
     parameters:
-        y_predicted -  array of 4 scales of estimation with (Network dispartiy map of shape (height, width, 1))
+        y_predicted -  tensor of size (batches, height, width, 1))
 
-        leftImage - Left Image
+        leftImage - Left Image of size (batches, height, width, channels)
+
+        numConv - scalar between 1 and 4 on the number of convolutions to perform
     '''
 
     # y_predicted: (1,881,400,1)
@@ -68,19 +70,21 @@ def smoothnessLoss(y_predicted, leftImage):
     # leftImgPyramid (1, 881, 400, 1)
 
     #leftImgPyramid_1_down = K.conv2d(leftImgPyramid, GausBlurKernel, strides=tuple((1,1)), dilation_rate=tuple((1,1)))
-    leftImgPyramid_1_down = K.conv2d(leftImgPyramid, GausBlurKernel)
+    leftImgPyramid_1_down = K.conv2d(leftImgPyramid, GausBlurKernel, padding='same')
     # Given an input tensor of shape [batch, in_height, in_width, in_channels] and 
     # a filter / kernel tensor of shape [filter_height, filter_width, in_channels, out_channels], this op performs the following: 
     #   1. Flattens the filter to a 2-D matrix with shape [filter_height * filter_width * in_channels, output_channels].
     #   2. Extracts image patches from the input tensor to form a virtual tensor of shape [batch, out_height, out_width, filter_height * filter_width * in_channels].
     #   3. For each patch, right-multiplies the filter matrix and the image patch vector.
 
-    leftImgPyramid_2_down = K.conv2d(leftImgPyramid_1_down, GausBlurKernel)
-    leftImgPyramid_3_down = K.conv2d(leftImgPyramid_2_down , GausBlurKernel)
+    leftImgPyramid_2_down = K.conv2d(leftImgPyramid_1_down, GausBlurKernel, padding='same')
+    leftImgPyramid_3_down = K.conv2d(leftImgPyramid_2_down , GausBlurKernel, padding='same')
 
     leftImgPyramid = [leftImgPyramid, leftImgPyramid_1_down, leftImgPyramid_2_down, leftImgPyramid_3_down]
 
-    return sum([K.mean(K.abs(findGradients(y_predicted, leftImgPyramid)[i])) / 2 ** i for i in range(4)]) / 4.
+    i = numConv-1
+
+    return K.mean(K.abs(findGradients(y_predicted, leftImgPyramid[i]))) / 2 ** i 
 
 
 def photoMetric(disp, left, right, width, height, batchsize):
@@ -178,8 +182,8 @@ class monoDepthV2Loss():
         disp        = y_pred
         # up-sample disparities by a nearest interpolation scheme for comparision at highest resolution per alrogithm
 
-        #L_s = smoothnessLoss(y_pred, left)
-        #smoothnessLoss(disp,left)
+        L_s = smoothnessLoss(y_pred, left, 1) # TODO add in number of conv
+        # smoothnessLoss(disp,left,1) 
 
         Direct, Reproject_0     = photoMetric(disp,left, right,       self.width, self.height, self.batchsize)
         Direct, Reproject_1     = photoMetric(disp,left, right_plus,  self.width, self.height, self.batchsize)
@@ -230,7 +234,9 @@ if __name__ == "__main__":
     dispTrue  = np.transpose(cv2.imread(dispImage),     axes=[1,0,2]).astype('float32')[:,:,0] / 256.
     dispWrong = np.transpose(cv2.imread(dispImage1),    axes=[1,0,2]).astype('float32')[:,:,0] / 256.
     right = np.transpose(cv2.imread(rightImage),    axes=[1,0,2]).astype('float32')
-
+    rand = np.random.randint(0, 2**16, size=left.shape, dtype='int32').astype('float32')
+    leftButScaled = left * 0.4
+    
     width = left.shape[0]
     height = left.shape[1]
     realOffset = 3
@@ -261,6 +267,8 @@ if __name__ == "__main__":
     rightImage_tensor = tf.expand_dims(tf.convert_to_tensor(right), 0)
     dispImage_tensor  = tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(dispTrue), 0), -1)
     dispImage_tensor1 = tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(dispWrong), 0), -1)
+    randImage_tensor = tf.expand_dims(tf.convert_to_tensor(rand), 0)
+    leftScaledImage_tensor = tf.expand_dims(tf.convert_to_tensor(leftButScaled), 0)
 
     Lp  = photoMetric(dispImage_tensor,  leftImage_tensor, rightImage_tensor, width, height, 1)
     Lp1 = photoMetric(dispImage_tensor1, leftImage_tensor, rightImage_tensor, width, height, 1)
@@ -296,5 +304,32 @@ if __name__ == "__main__":
     #print(K.eval(LpO))  
 
     print("smoothness good test")
-    smoothness = smoothnessLoss(dispImage_tensor,leftImage_tensor)
+    comparator = leftImage_tensor
+    smoothness = smoothnessLoss(comparator,leftImage_tensor, 1)
     print(K.eval(smoothness))
+
+    smoothness = smoothnessLoss(comparator,leftImage_tensor, 2)
+    print(K.eval(smoothness))
+
+    smoothness = smoothnessLoss(comparator,leftImage_tensor, 3)
+    print(K.eval(smoothness))
+
+    smoothness = smoothnessLoss(comparator,leftImage_tensor, 4)
+    print(K.eval(smoothness))
+    '''
+        convs  | disp vs left| left vs left | random vs left | right vs left | leftScaled0.4 vs left
+        1        0.027379034    0.3894189     14266.269        1.4842504        0.15576762
+        2        0.01510952     0.38573       8023.563         0.8445017        0.15429199
+        3        0.008012139    0.24224764    4243.597         0.45495307       0.096899055
+        4        0.004178587    0.14077793    2208.4468        0.24049726       0.05631118
+    '''
+
+
+
+# scales of the image
+# left, left multiplied down by 0.1
+
+
+# left, left should be near 0
+# left, garbage should be bad
+# left, right should be closer to 0
