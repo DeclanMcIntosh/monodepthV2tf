@@ -30,14 +30,17 @@ def findGradients(y_predicted, leftImgPyramid):
         gy = img[:,:-1,:,:] - img[:,1:,:,:]
         return gy
 
+    # y_predicted: (1,881,400,1)
+    # leftImgPyramid: (4 scales of (1,881-2n,400-2n,1) )
+
     image_gradients_x = [gradient_x(img) for img in leftImgPyramid]
     image_gradients_y = [gradient_y(img) for img in leftImgPyramid]
     
-    dispGradientX = [gradient_x(d) for d in y_predicted]
-    dispGradientY = [gradient_y(d) for d in y_predicted]
+    dispGradientX = gradient_x(y_predicted)
+    dispGradientY = gradient_y(y_predicted)
  
-    weightX = [K.exp(-K.mean(K.abs(g), 3, keep_dims=True)) for g in image_gradients_x]
-    weightY = [K.exp(-K.mean(K.abs(g), 3, keep_dims=True)) for g in image_gradients_y]
+    weightX = [K.exp(-K.mean(K.abs(g), 3, keepdims=True)) for g in image_gradients_x]
+    weightY = [K.exp(-K.mean(K.abs(g), 3, keepdims=True)) for g in image_gradients_y]
 
     smoothness_x = [dispGradientX[i] * weightX[i] for i in range(4)]
     smoothness_y = [dispGradientY[i] * weightY[i] for i in range(4)]
@@ -210,15 +213,15 @@ get batch size != 1 working
 
 if __name__ == "__main__":
 
-    leftImage  = '../validate/left/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
-    dispImage  = '../validate/disp/2018-07-16-15-37-46_2018-07-16-15-38-12-727.png' # actuall associated disparity
-    dispImage1  = '../validate/disp/2018-07-16-15-37-46_2018-07-16-16-32-48-979.png' # bad disparity totally random
-    rightImage = '../validate/right/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
+    leftImage  = '../val/left/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
+    dispImage  = '../val/disp/2018-07-16-15-37-46_2018-07-16-15-38-12-727.png' # actuall associated disparity
+    dispImage1  = '../val/disp/2018-07-16-15-37-46_2018-07-16-16-32-48-979.png' # bad disparity totally random
+    rightImage = '../val/right/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
 
-    # leftImage  = '../validate/left/2018-07-09-16-11-56_2018-07-09-16-11-56-502.jpg'
-    # dispImage  = '../validate/disp/2018-07-09-16-11-56_2018-07-09-16-11-56-502.png' # actuall associated disparity
-    # dispImage1  = '../validate/disp/2018-07-16-15-37-46_2018-07-16-16-32-48-979.png' # bad disparity totally random
-    # rightImage = '../validate/right/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
+    # leftImage  = '../val/left/2018-07-09-16-11-56_2018-07-09-16-11-56-502.jpg'
+    # dispImage  = '../val/disp/2018-07-09-16-11-56_2018-07-09-16-11-56-502.png' # actuall associated disparity
+    # dispImage1  = '../val/disp/2018-07-16-15-37-46_2018-07-16-16-32-48-979.png' # bad disparity totally random
+    # rightImage = '../val/right/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
 
     import numpy as np
     import cv2
