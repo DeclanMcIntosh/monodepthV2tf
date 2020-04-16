@@ -31,7 +31,7 @@ model.compile(optimizer=Adam(lr=1e-3),loss=loss)
 
 # lets define some callbacks
 if not os.path.exists('models/' + Notes + '_' + trainingRunDate + '_batchsize_' + str(batchSize) + '/'):
-    os.mkdir('models/' + Notes + '_' + trainingRunDate + '_batchsize_' + str(batchSize) + '/')
+    os.makedirs('models/' + Notes + '_' + trainingRunDate + '_batchsize_' + str(batchSize) + '/')
 mc = ModelCheckpoint('models/' + Notes + '_' + trainingRunDate + '/_weights_epoch{epoch:02d}_val_loss_{val_loss:.4f}_train_loss_{loss:.4f}.hdf5', monitor='val_loss')
 mc1 = ModelCheckpoint('models/' + Notes + '_' + trainingRunDate + '/_weights_epoch{epoch:02d}_val_loss_{val_loss:.4f}_train_loss_{loss:.4f}.hdf5', monitor='loss')
 rl = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=2, verbose=1)
