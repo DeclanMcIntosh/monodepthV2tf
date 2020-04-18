@@ -198,7 +198,7 @@ def buildDecoder(inputLayer, scale_1, scale_2, scale_3, outputChannels=1):
     x = Conv2D(64, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="EndingConvBlock2", activation='relu')(x)
     x = Conv2D(outputChannels, kernel_size=3, strides=1, data_format='channels_last' ,padding='same', name="OutputConvBlock", activation='sigmoid')(x)
     
-    return x, scale_1_out, scale_2_out, scale_3_out
+    return concatenate([x, scale_1_out, scale_2_out, scale_3_out], axis=3), scale_1_out, scale_2_out, scale_3_out
 
 
 def create_monoDepth_Model(input_shape=(640,192,3), encoder_type=50):

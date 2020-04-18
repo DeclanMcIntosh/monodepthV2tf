@@ -101,13 +101,13 @@ def photoMetric(disp, left, right, width, height, batchsize):
     #print(K.eval(disp_f))
     #print(K.eval(left_f_0))
     # find the self-referantiatl indicies in the tensor
-    indicies = K.arange(0,K.shape(disp_f)[0], dtype='float32')
+    indicies = K.arange(0,batchsize*width*height, dtype='float32')
 
 
     #print("indicies", K.eval(indicies))
     # offset the indicies by the disparities to make the reprojection referances for the left image
 
-    right_referances = K.clip(indicies + (disp_f * -1 * width), 0, width*height*batchsize)
+    right_referances = K.clip(indicies + (disp_f * -1 * width), 0, batchsize*width*height)
 
     # OK TO THIS POINT NO GRADS GET LOST
     intReferances = K.cast(tf.floor(right_referances), 'int32')
@@ -154,8 +154,7 @@ def photoMetric(disp, left, right, width, height, batchsize):
 
 
 class monoDepthV2Loss():
-    def __init__(self, mu, lambda_, width, height, batchsize):
-        self.mu = mu
+    def __init__(self, lambda_, width, height, batchsize):
         self.lambda_ = lambda_
         self.width = width
         self.height = height
@@ -179,12 +178,25 @@ class monoDepthV2Loss():
         right       = y_true[:,:,:,6:9 ]
         right_plus  = y_true[:,:,:,9:12]
 
-        disp        = y_pred
+        disp0        = K.expand_dims(y_pred[:,:,:,0],-1)
+        disp1        = K.expand_dims(y_pred[:,:,:,1],-1)
+        disp2        = K.expand_dims(y_pred[:,:,:,2],-1)
+        disp3        = K.expand_dims(y_pred[:,:,:,3],-1)
         # up-sample disparities by a nearest interpolation scheme for comparision at highest resolution per alrogithm
 
-        L_s = smoothnessLoss(y_pred, left, 1) # TODO add in number of conv
-        # smoothnessLoss(disp,left,1) 
+        #L_s  = smoothnessLoss(disp0, left, 1) 
+        #L_s += smoothnessLoss(disp1, left, 2) 
+        #L_s += smoothnessLoss(disp2, left, 3) 
+        #L_s += smoothnessLoss(disp3, left, 4) 
 
+        L_p  = self.getReprojectionLoss(left, right, right_plus, right_minus, disp0)
+        L_p += self.getReprojectionLoss(left, right, right_plus, right_minus, disp1)
+        L_p += self.getReprojectionLoss(left, right, right_plus, right_minus, disp2)
+        L_p += self.getReprojectionLoss(left, right, right_plus, right_minus, disp3)
+
+        return L_p #+ L_s * self.lambda_
+
+    def getReprojectionLoss(self, left, right, right_plus, right_minus, disp):
         Direct, Reproject_0     = photoMetric(disp,left, right,       self.width, self.height, self.batchsize)
         Direct, Reproject_1     = photoMetric(disp,left, right_plus,  self.width, self.height, self.batchsize)
         Direct, Reproject_neg1  = photoMetric(disp,left, right_minus, self.width, self.height, self.batchsize)
@@ -202,9 +214,8 @@ class monoDepthV2Loss():
         ReprojectedError = mu_mask_custom * ReprojectedError 
 
         #L_p = K.mean(disp) # switching to this fixes out of bounds issue, will check to see if i can get this working 
-        #return L_p* self.mu + L_s * self.lambda_
-        return ReprojectedError
-
+        
+        return K.mean(ReprojectedError)
 '''
 TODO
 
@@ -217,61 +228,50 @@ get batch size != 1 working
 
 if __name__ == "__main__":
 
-    leftImage  = '../val/left/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
-    dispImage  = '../val/disp/2018-07-16-15-37-46_2018-07-16-15-38-12-727.png' # actuall associated disparity
-    dispImage1  = '../val/disp/2018-07-16-15-37-46_2018-07-16-16-32-48-979.png' # bad disparity totally random
-    rightImage = '../val/right/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
+    #leftImage  = '../val/left/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
+    #dispImage  = '../val/disp/2018-07-16-15-37-46_2018-07-16-15-38-12-727.png' # actuall associated disparity
+    #dispImage1  = '../val/disp/2018-07-16-15-37-46_2018-07-16-16-32-48-979.png' # bad disparity totally random
+    #rightImage = '../val/right/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
 
-    # leftImage  = '../val/left/2018-07-09-16-11-56_2018-07-09-16-11-56-502.jpg'
-    # dispImage  = '../val/disp/2018-07-09-16-11-56_2018-07-09-16-11-56-502.png' # actuall associated disparity
-    # dispImage1  = '../val/disp/2018-07-16-15-37-46_2018-07-16-16-32-48-979.png' # bad disparity totally random
-    # rightImage = '../val/right/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
+    leftImage  = '../test/left/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
+    dispImage  = '../test/disp/2018-07-16-15-37-46_2018-07-16-15-38-12-727.png' # actuall associated disparity
+    dispImage1 = '../test/disp/2018-07-16-15-37-46_2018-07-16-16-32-48-979.png' # bad disparity totally random
+    rightImage = '../test/right/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
+
 
     import numpy as np
     import cv2
 
-    left  = np.transpose(cv2.imread(leftImage),     axes=[1,0,2]).astype('float32')
+    left      = np.transpose(cv2.imread(leftImage),     axes=[1,0,2]).astype('float32')
     dispTrue  = np.transpose(cv2.imread(dispImage),     axes=[1,0,2]).astype('float32')[:,:,0] / 256.
     dispWrong = np.transpose(cv2.imread(dispImage1),    axes=[1,0,2]).astype('float32')[:,:,0] / 256.
-    right = np.transpose(cv2.imread(rightImage),    axes=[1,0,2]).astype('float32')
-    rand = np.random.randint(0, 2**16, size=left.shape, dtype='int32').astype('float32')
+    right     = np.transpose(cv2.imread(rightImage),    axes=[1,0,2]).astype('float32')
+    rand      = np.random.randint(0, 2**16, size=left.shape, dtype='int32').astype('float32')
     leftButScaled = left * 0.4
     
     width = left.shape[0]
     height = left.shape[1]
     realOffset = 3
 
-    # memes = np.arange(0,width)
-
-    # left      = np.zeros(shape=(width,height,3)).astype('float32')
-    # right     = np.zeros(shape=(width,height,3)).astype('float32')
-    # dispTrue  = np.full(shape=(width,height,1),  fill_value=realOffset).astype('float32')    / width 
-    # dispWrong = np.full(shape=(width,height,1),  fill_value=realOffset -1).astype('float32') / width
-
-    # for _ in range(height):
-    #     left[:,_,0] = memes
-    #     left[:,_,1] = memes
-    #     left[:,_,2] = memes
-
-    #     right[0:width-realOffset,_,0] = memes[realOffset:]
-    #     right[0:width-realOffset,_,1] = memes[realOffset:]
-    #     right[0:width-realOffset,_,2] = memes[realOffset:]
-
     
-    # left.reshape(1,  left.shape[0], left.shape[1], left.shape[2]  )
-    # dispTrue.reshape(1,  dispTrue.shape[0], dispTrue.shape[1], 1)
-    # dispWrong.reshape(1,  dispWrong.shape[0], dispWrong.shape[1], 1)
-    # right.reshape(1, right.shape[0], right.shape[1], right.shape[2]  )
-    
-    leftImage_tensor  = tf.expand_dims(tf.convert_to_tensor(left), 0)
-    rightImage_tensor = tf.expand_dims(tf.convert_to_tensor(right), 0)
-    dispImage_tensor  = tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(dispTrue), 0), -1)
-    dispImage_tensor1 = tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(dispWrong), 0), -1)
-    randImage_tensor = tf.expand_dims(tf.convert_to_tensor(rand), 0)
-    leftScaledImage_tensor = tf.expand_dims(tf.convert_to_tensor(leftButScaled), 0)
+    leftImage_tensor        = tf.expand_dims(tf.convert_to_tensor(left), 0)
+    rightImage_tensor       = tf.expand_dims(tf.convert_to_tensor(right), 0)
+    dispImage_tensor        = tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(dispTrue), 0), -1)
+    dispImage_tensor1       = tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(dispWrong), 0), -1)
+    randImage_tensor        = tf.expand_dims(tf.convert_to_tensor(rand), 0)
+    leftScaledImage_tensor  = tf.expand_dims(tf.convert_to_tensor(leftButScaled), 0)
 
-    Lp  = photoMetric(dispImage_tensor,  leftImage_tensor, rightImage_tensor, width, height, 1)
-    Lp1 = photoMetric(dispImage_tensor1, leftImage_tensor, rightImage_tensor, width, height, 1)
+    leftImage_tensor       = K.concatenate([leftImage_tensor        ,leftImage_tensor        ,leftImage_tensor      ], axis=0) 
+    rightImage_tensor      = K.concatenate([rightImage_tensor       ,rightImage_tensor       ,rightImage_tensor     ], axis=0) 
+    dispImage_tensor       = K.concatenate([dispImage_tensor        ,dispImage_tensor        ,dispImage_tensor      ], axis=0) 
+    dispImage_tensor1      = K.concatenate([dispImage_tensor1       ,dispImage_tensor1       ,dispImage_tensor1     ], axis=0) 
+    randImage_tensor       = K.concatenate([randImage_tensor        ,randImage_tensor        ,randImage_tensor      ], axis=0) 
+    leftScaledImage_tensor = K.concatenate([leftScaledImage_tensor  ,leftScaledImage_tensor  ,leftScaledImage_tensor], axis=0) 
+
+    Direct, Reproject_0  = photoMetric(dispImage_tensor,  leftImage_tensor, rightImage_tensor, width, height, 3)
+    print(K.eval(Lp))
+    Direct, Reproject_0 = photoMetric(dispImage_tensor1, leftImage_tensor, rightImage_tensor, width, height, 3)
+    print(K.eval(Lp1))
 
     # print("good")
     # print(K.eval(Lp))
@@ -279,23 +279,23 @@ if __name__ == "__main__":
     # print(K.eval(Lp1))
 
     #disp1 = np.random.uniform(size=disp.shape).astype('float32')
-#
+
     #left.reshape(1,  left.shape[0], left.shape[1], left.shape[2]  )
     #disp.reshape(1,  disp.shape[0], disp.shape[1], 1)
     ##dispO.reshape(1,  dispO.shape[0], dispO.shape[1], 1)
     #disp1.reshape(1,  disp1.shape[0], disp1.shape[1], 1)
     #right.reshape(1, right.shape[0], right.shape[1], right.shape[2]  )
-#
+
     #leftImage_tensor  = tf.expand_dims(tf.convert_to_tensor(left), 0)
     #rightImage_tensor = tf.expand_dims(tf.convert_to_tensor(right), 0)
     #dispImage_tensor  = tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(disp), 0), -1)
     #dispImage_tensor1 = tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(disp1), 0), -1)
-    ##dispImage_tensorO = tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(dispO), 0), -1)
-#
+    #dispImage_tensorO = tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(dispO), 0), -1)
+
     #Lp  = photoMetric(dispImage_tensor,  leftImage_tensor, rightImage_tensor, left.shape[1], left.shape[2], 1)
     #Lp1 = photoMetric(dispImage_tensor1, leftImage_tensor, rightImage_tensor, left.shape[1], left.shape[2], 1)
     ##LpO = photoMetric(dispImage_tensorO, leftImage_tensor, rightImage_tensor, left.shape[1], left.shape[2], 1)
-#
+
     #print("good")
     #print(K.eval(Lp))
     #print("random")
@@ -316,6 +316,7 @@ if __name__ == "__main__":
 
     smoothness = smoothnessLoss(comparator,leftImage_tensor, 4)
     print(K.eval(smoothness))
+    
     '''
         convs  | disp vs left| left vs left | random vs left | right vs left | leftScaled0.4 vs left
         1        0.027379034    0.3894189     14266.269        1.4842504        0.15576762
