@@ -16,8 +16,8 @@ from dataGen import depthDataGenerator
 
 # define these
 batchSize = 12
-trainingRunDate = '2020_4_17'
-Notes = 'Full_data_no_mu'
+trainingRunDate = '2020_4_18'
+Notes = 'Full_data_no_mu_with_SSIM'
 
 # build data generators
 train_generator = depthDataGenerator('../train/left/','../train/right/',batch_size=batchSize, shuffle=True, max_img_time_diff=700 )
@@ -25,7 +25,7 @@ train_generator = depthDataGenerator('../train/left/','../train/right/',batch_si
 val_generator  = depthDataGenerator('../val/left/', '../val/right/', batch_size=batchSize, shuffle=False, agumentations=False, max_img_time_diff=700)
 
 # build loss
-lossClasss = monoDepthV2Loss(0.001,640,192,batchSize)
+lossClasss = monoDepthV2Loss(0.001,0.85,640,192,batchSize)
 loss = lossClasss.applyLoss # nine found to be roughtly even contribution to begin with 
 repoLoss = lossClasss.fullReprojection
 smoothLoss = lossClasss.fullSmoothnessLoss
@@ -41,10 +41,10 @@ model.compile(optimizer=Adam(lr=1e-3),loss=loss, metrics=[repoLoss,smoothLoss])
 # lets define some callbacks
 if not os.path.exists('models/' + Notes + '_' + trainingRunDate + '_batchsize_' + str(batchSize) + '/'):
     os.makedirs('models/' + Notes + '_' + trainingRunDate + '_batchsize_' + str(batchSize) + '/')
-mc = ModelCheckpoint('models/' + Notes + '_' + trainingRunDate + '/_weights_epoch{epoch:02d}_val_loss_{val_loss:.4f}_train_loss_{loss:.4f}.hdf5', monitor='val_loss')
-mc1 = ModelCheckpoint('models/' + Notes + '_' + trainingRunDate + '/_weights_epoch{epoch:02d}_val_loss_{val_loss:.4f}_train_loss_{loss:.4f}.hdf5', monitor='loss')
+mc = ModelCheckpoint('models/' + Notes + '_' + trainingRunDate +  '_batchsize_' + str(batchSize) + '/_weights_epoch{epoch:02d}_val_loss_{val_loss:.4f}_train_loss_{loss:.4f}.hdf5', monitor='val_loss')
+mc1 = ModelCheckpoint('models/' + Notes + '_' + trainingRunDate +  '_batchsize_' + str(batchSize) + '/_weights_epoch{epoch:02d}_val_loss_{val_loss:.4f}_train_loss_{loss:.4f}.hdf5', monitor='loss')
 rl = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=2, verbose=1)
-tb = TensorBoard(log_dir='logs/' + Notes + '_' + trainingRunDate + '_batchsize_' + str(batchSize), update_freq=1000)
+tb = TensorBoard(log_dir='logs/' + Notes + '_' + trainingRunDate + '_batchsize_' + str(batchSize), update_freq=250)
 
 # Schedule Learning rate Callback
 def lr_schedule(epoch):

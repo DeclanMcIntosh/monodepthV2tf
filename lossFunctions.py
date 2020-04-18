@@ -98,25 +98,16 @@ def photoMetric(disp, left, right, width, height, batchsize):
     right_f_1 =  K.flatten( K.permute_dimensions(right[:,:,:,1], pattern=(0,2,1)))
     left_f_2 =   K.flatten( K.permute_dimensions( left[:,:,:,2], pattern=(0,2,1)))
     right_f_2 =  K.flatten( K.permute_dimensions(right[:,:,:,2], pattern=(0,2,1)))
-    #print(K.eval(disp_f))
-    #print(K.eval(left_f_0))
     # find the self-referantiatl indicies in the tensor
     indicies = K.arange(0,batchsize*width*height, dtype='float32')
-
-
-    #print("indicies", K.eval(indicies))
-    # offset the indicies by the disparities to make the reprojection referances for the left image
 
     right_referances = K.clip(indicies + (disp_f * -1 * width), 0, batchsize*width*height)
 
     # OK TO THIS POINT NO GRADS GET LOST
     intReferances = K.cast(tf.floor(right_referances), 'int32')
 
-    #print("intReferances", K.eval(intReferances))
-
     # gather the values to creat the left re-projected images
-    right_f_referance_to_projected_0 = K.gather(right_f_0, intReferances) # not differentiable due to cast operation
-    #test2 = K.eval(right_referances)
+    right_f_referance_to_projected_0 = K.gather(right_f_0, intReferances) 
     right_f_referance_to_projected_1 = K.gather(right_f_1, intReferances)
     right_f_referance_to_projected_2 = K.gather(right_f_2, intReferances)
 
@@ -128,37 +119,50 @@ def photoMetric(disp, left, right, width, height, batchsize):
               + K.abs((left_f_1 - right_f_1)) \
               + K.abs((left_f_2 - right_f_2))
 
-    # develop mask for loss where the repojected loss is better than the direct comparision loss
-    # minMask = K.cast(K.less(diffReproject, diffDirect), 'float32')
-
     #L2Reproject = K.sqrt(   K.square(left_f_0 - right_f_referance_to_projected_0) \
     #                      + K.square(left_f_1 - right_f_referance_to_projected_1) \
     #                      + K.square(left_f_2 - right_f_referance_to_projected_2) )
- 
     L1Reproject =   K.abs(left_f_0 - right_f_referance_to_projected_0) \
                   + K.abs(left_f_1 - right_f_referance_to_projected_1) \
                   + K.abs(left_f_2 - right_f_referance_to_projected_2) 
-    #print("L1Direct Loss ", K.eval(K.mean(L1Direct)))
-    #print("L1Repoject Loss ", K.eval(K.mean(L1Reproject)))
 
-    return L1Direct, L1Reproject * (right_referances /( right_referances + 1e-10))
+    greyImageRight      = ( right_f_0 + right_f_1 + right_f_2 )/ 3.
+    greyImageReproject  = ( right_f_referance_to_projected_0 + right_f_referance_to_projected_1 + right_f_referance_to_projected_2 )/ 3.
+    greyLeftImage       = (left_f_0 + left_f_1 + left_f_2)/ 3.
 
-    #test4 = K.eval(diffReproject)
-    # develop mask for loss where the repojected loss is better than the direct comparision loss
-    #minMask = K.less(L1Reproject, L1Direct)
-    # apply mask
-    #out = (L1Reproject/255.) * K.cast(minMask, 'float32') * (right_referances /( right_referances + 1e-10))
+    mean_right      = K.mean(greyImageRight)
+    mean_reproject  = K.mean(greyImageReproject)
+    mean_left       = K.mean(greyLeftImage)
 
-    # determine mean and normalize 
-    #return (K.sum(out) / K.cast(tf.math.count_nonzero(out),dtype='float32'))
+    variance_right      = K.sum(K.square(greyImageRight     - mean_right))      /(batchsize*width*height - 1)
+    variance_reproject  = K.sum(K.square(greyImageReproject - mean_reproject))  /(batchsize*width*height - 1)
+    variance_left       = K.sum(K.square(greyLeftImage      - mean_left))       /(batchsize*width*height - 1)
+
+    covariance_right_reproject  = K.sum((greyImageRight - mean_right)*(greyImageReproject - mean_reproject))/(batchsize*width*height - 1) # TODO not sum this for masking
+    covariance_left_right       = K.sum((greyLeftImage  - mean_left) *(greyImageRight     - mean_right))    /(batchsize*width*height - 1) # TODO not sum this for masking
+
+    L = 256 - 1 # the range of the iamges
+
+    c_1 = (0.01 * L) * (0.01 * L) # default values
+    c_2 = (0.03 * L) * (0.03 * L) # default values
+    
+    SSIM_right_reproject = (2*mean_right*mean_reproject+c_1)*(2*covariance_right_reproject + c_2)/ \
+                            ((mean_right*mean_right+mean_reproject*mean_reproject+c_1)*(variance_right*variance_right+variance_reproject*variance_reproject+c_2))
+
+    SSIM_right_left      = (2*mean_right*mean_left+c_1)*(2*covariance_left_right + c_2)/ \
+                            ((mean_right*mean_right+mean_left*mean_left+c_1)*(variance_right*variance_right+variance_left*variance_left+c_2))
+
+    #return L1Direct, L1Reproject * (right_referances /( right_referances + 1e-10)), SSIM_right_reproject, SSIM_right_left
+    return L1Direct, L1Reproject, SSIM_right_reproject, SSIM_right_left
 
 
 class monoDepthV2Loss():
-    def __init__(self, lambda_, width, height, batchsize):
+    def __init__(self, lambda_, alpha, width, height, batchsize):
         self.lambda_ = lambda_
         self.width = width
         self.height = height
         self.batchsize = batchsize
+        self.alpha = alpha
 
     def applyLoss(self, y_true, y_pred):
         '''
@@ -198,9 +202,9 @@ class monoDepthV2Loss():
         return L_s
 
     def getReprojectionLoss(self, left, right, right_plus, right_minus, disp):
-        Direct, Reproject_0     = photoMetric(disp,left, right,       self.width, self.height, self.batchsize)
-        Direct, Reproject_1     = photoMetric(disp,left, right_plus,  self.width, self.height, self.batchsize)
-        Direct, Reproject_neg1  = photoMetric(disp,left, right_minus, self.width, self.height, self.batchsize)
+        Direct, Reproject_0   , SSIM_right_repo_0, SSIM_right_left_0  = photoMetric(disp,left, right,       self.width, self.height, self.batchsize)
+        Direct, Reproject_1   , SSIM_right_repo_1, SSIM_right_left_1  = photoMetric(disp,left, right_plus,  self.width, self.height, self.batchsize)
+        Direct, Reproject_neg1, SSIM_right_repo_2, SSIM_right_left_2  = photoMetric(disp,left, right_minus, self.width, self.height, self.batchsize)
 
         ReprojectedError = K.minimum(Reproject_0, Reproject_1)
         ReprojectedError = K.minimum(ReprojectedError, Reproject_neg1)
@@ -213,10 +217,8 @@ class monoDepthV2Loss():
 
         #ReprojectedError = mu_mask * ReprojectedError 
         ReprojectedError = mu_mask_custom * ReprojectedError 
-
-        #L_p = K.mean(disp) # switching to this fixes out of bounds issue, will check to see if i can get this working 
         
-        return K.mean(ReprojectedError) / 255.
+        return ((self.alpha/2.) * (1 - SSIM_right_repo_0)) + ((K.mean(ReprojectedError) / 255.) * (1 - self.alpha)) 
 
     def fullReprojection(self, y_true, y_pred):
         
