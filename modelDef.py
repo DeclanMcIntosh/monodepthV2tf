@@ -38,56 +38,56 @@ def generateResNetEncoderLayers(inputLayer, resnetType=18):
     '''
     assert resnetType in [50,18]
     if resnetType == 50:
-        x = resentLayerInitialStage(inputLayer)
+        x = ResNetLayerInitialStage(inputLayer)
 
-        x = resentLayerLaterState_50(x, 64, [64,64,256],1,1)
-        x = resentLayerLaterState_50(x, 256, [64,64,256],1,2)
-        x = resentLayerLaterState_50(x, 256, [64,64,256],1,3)
+        x = ResNetLayerLaterState_50(x, 64, [64,64,256],1,1)
+        x = ResNetLayerLaterState_50(x, 256, [64,64,256],1,2)
+        x = ResNetLayerLaterState_50(x, 256, [64,64,256],1,3)
         
-        x1 = resentLayerLaterState_50(x, 256, [128,128,512],2,4)
-        x1 = resentLayerLaterState_50(x1, 512, [128,128,512],1,5)
-        x1 = resentLayerLaterState_50(x1, 512, [128,128,512],1,6)
-        x1 = resentLayerLaterState_50(x1, 512, [128,128,512],1,7)
+        x1 = ResNetLayerLaterState_50(x, 256, [128,128,512],2,4)
+        x1 = ResNetLayerLaterState_50(x1, 512, [128,128,512],1,5)
+        x1 = ResNetLayerLaterState_50(x1, 512, [128,128,512],1,6)
+        x1 = ResNetLayerLaterState_50(x1, 512, [128,128,512],1,7)
 
-        x2 = resentLayerLaterState_50(x1, 512, [256,256,1024],2,8)
-        x2 = resentLayerLaterState_50(x2, 1024, [256,256,1024],1,9)
-        x2 = resentLayerLaterState_50(x2, 1024, [256,256,1024],1,10)
-        x2 = resentLayerLaterState_50(x2, 1024, [256,256,1024],1,11)
-        x2 = resentLayerLaterState_50(x2, 1024, [256,256,1024],1,12)
-        x2 = resentLayerLaterState_50(x2, 1024, [256,256,1024],1,13)
+        x2 = ResNetLayerLaterState_50(x1, 512, [256,256,1024],2,8)
+        x2 = ResNetLayerLaterState_50(x2, 1024, [256,256,1024],1,9)
+        x2 = ResNetLayerLaterState_50(x2, 1024, [256,256,1024],1,10)
+        x2 = ResNetLayerLaterState_50(x2, 1024, [256,256,1024],1,11)
+        x2 = ResNetLayerLaterState_50(x2, 1024, [256,256,1024],1,12)
+        x2 = ResNetLayerLaterState_50(x2, 1024, [256,256,1024],1,13)
 
-        x3 = resentLayerLaterState_50(x2, 1024, [512,512,2048],2,14)
-        x3 = resentLayerLaterState_50(x3, 2048, [512,512,2048],1,15)
-        x3 = resentLayerLaterState_50(x3, 2048, [512,512,2048],1,16)
+        x3 = ResNetLayerLaterState_50(x2, 1024, [512,512,2048],2,14)
+        x3 = ResNetLayerLaterState_50(x3, 2048, [512,512,2048],1,15)
+        x3 = ResNetLayerLaterState_50(x3, 2048, [512,512,2048],1,16)
 
-        x3 = resnetOuputStage(x3)
+        x3 = ResNetOuputStage(x3)
         return x3, x2, x1, x
 
     else: # is resnet 18
-        x = resentLayerInitialStage(inputLayer)
+        x = ResNetLayerInitialStage(inputLayer)
         
-        x = resentLayerLaterState_18(x, 64, [64,64],1,1)
-        x = resentLayerLaterState_18(x, 64, [64,64],1,2)
+        x = ResNetLayerLaterState_18(x, 64, [64,64],1,1)
+        x = ResNetLayerLaterState_18(x, 64, [64,64],1,2)
 
-        x1 = resentLayerLaterState_18(x, 64, [128,128],2,3)
-        x1 = resentLayerLaterState_18(x1, 128, [128,128],1,4)
+        x1 = ResNetLayerLaterState_18(x, 64, [128,128],2,3)
+        x1 = ResNetLayerLaterState_18(x1, 128, [128,128],1,4)
 
-        x2 = resentLayerLaterState_18(x1, 128, [256,256],2,6)
-        x2 = resentLayerLaterState_18(x2, 256, [256,256],1,7)
+        x2 = ResNetLayerLaterState_18(x1, 128, [256,256],2,6)
+        x2 = ResNetLayerLaterState_18(x2, 256, [256,256],1,7)
         
-        x3 = resentLayerLaterState_18(x2, 256, [512,512],2,8)
-        x3 = resentLayerLaterState_18(x3, 512, [512,512],1,9)
+        x3 = ResNetLayerLaterState_18(x2, 256, [512,512],2,8)
+        x3 = ResNetLayerLaterState_18(x3, 512, [512,512],1,9)
 
-        x3 = resnetOuputStage(x3)
+        x3 = ResNetOuputStage(x3)
         return x3, x2, x1, x
 
-def resentLayerInitialStage(inputLayer):
+def ResNetLayerInitialStage(inputLayer):
     x = Conv2D(filters=64,kernel_size=7,strides=2,data_format='channels_last',activation='relu',padding='same', name="InitialConv")(inputLayer)
     x = BatchNormalization(axis=3)(x)
     x = MaxPool2D(pool_size=(3,3),strides=2, data_format='channels_last',padding='same', name="InitalPool")(x)
     return x
 
-def resentLayerLaterState_50(inputLayer, inputChannels, channels, poolingStride, resNetBlockID):
+def ResNetLayerLaterState_50(inputLayer, inputChannels, channels, poolingStride, resNetBlockID):
     '''
     3 convolutional blocks
 
@@ -117,7 +117,7 @@ def resentLayerLaterState_50(inputLayer, inputChannels, channels, poolingStride,
     x = Activation('relu')(x)
     return x
 
-def resentLayerLaterState_18(inputLayer, inputChannels, channels, poolingStride, resNetBlockID):
+def ResNetLayerLaterState_18(inputLayer, inputChannels, channels, poolingStride, resNetBlockID):
     '''
     two convolutional blocks 
     3x3, channels[0], relu
@@ -144,7 +144,7 @@ def resentLayerLaterState_18(inputLayer, inputChannels, channels, poolingStride,
 
     return x
 
-def resnetOuputStage(inputLayer, pools=1000):
+def ResNetOuputStage(inputLayer, pools=1000):
     output = AveragePooling2D(pool_size=2,strides=1,padding='same')(inputLayer)
     return output
 
