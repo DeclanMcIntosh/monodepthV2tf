@@ -215,7 +215,7 @@ class monoDepthV2Loss():
 
         #L_p = K.mean(disp) # switching to this fixes out of bounds issue, will check to see if i can get this working 
         
-        return K.mean(ReprojectedError)
+        return K.mean(ReprojectedError) / 255.
 '''
 TODO
 

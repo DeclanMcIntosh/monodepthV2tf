@@ -1,5 +1,5 @@
 import os
-#os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 import tensorflow as tf
 import keras 
 import cv2
@@ -15,24 +15,24 @@ from lossFunctions import monoDepthV2Loss
 from dataGen import depthDataGenerator
 
 # define these
-batchSize = 8
-trainingRunDate = '2020_4_15'
-Notes = 'Full_data_no_smoothness_custom_mu_lower learning'
+batchSize = 12
+trainingRunDate = '2020_4_17'
+Notes = 'Full_data_no_mu'
 
 # build data generators
-#train_generator = depthDataGenerator('../train/left/','../train/right/',batch_size=batchSize, shuffle=True, max_img_time_diff=700 )
-train_generator  = depthDataGenerator('../val/left/', '../val/right/', batch_size=batchSize, shuffle=True, max_img_time_diff=700)
+train_generator = depthDataGenerator('../train/left/','../train/right/',batch_size=batchSize, shuffle=True, max_img_time_diff=700 )
+#train_generator  = depthDataGenerator('../val/left/', '../val/right/', batch_size=batchSize, shuffle=True, max_img_time_diff=700)
 val_generator  = depthDataGenerator('../val/left/', '../val/right/', batch_size=batchSize, shuffle=False, agumentations=False, max_img_time_diff=700)
 
 # build loss
-loss = monoDepthV2Loss(9,640,192,batchSize).applyLoss # nine found to be roughtly even contribution to begin with 
+loss = monoDepthV2Loss(0.001,640,192,batchSize).applyLoss # nine found to be roughtly even contribution to begin with 
 
 # build model
 model = create_monoDepth_Model(input_shape=(640,192,3), encoder_type=18)
-try:
-    model = multi_gpu_model(model)
-except:
-    pass
+#try:
+#    model = multi_gpu_model(model)
+#except:
+#    pass
 model.compile(optimizer=Adam(lr=1e-3),loss=loss)
 
 # lets define some callbacks
@@ -45,15 +45,12 @@ tb = TensorBoard(log_dir='logs/' + Notes + '_' + trainingRunDate + '_batchsize_'
 
 # Schedule Learning rate Callback
 def lr_schedule(epoch):
-    if epoch < 1:
-        return 0.0 
-    if epoch < 10:
-        return ((epoch/10)**2) * 1e-4
+    if epoch < 15:
+        return 1e-3 
     else:
-        return cos((((epoch-10)%30)/30)*(pi/2)) * 1e-4
+        return 1e-4
 
 lr = LearningRateScheduler(schedule=lr_schedule,verbose=1)
 
-
-model.fit_generator(train_generator, epochs = 100, validation_data=val_generator, callbacks=[mc,mc1,rl,tb])
+model.fit_generator(train_generator, epochs = 20, validation_data=val_generator, callbacks=[mc,mc1,lr,tb])
 
