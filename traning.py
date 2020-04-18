@@ -17,7 +17,7 @@ from dataGen import depthDataGenerator
 # define these
 batchSize = 12
 trainingRunDate = '2020_4_18'
-Notes = 'Full_data_no_mu_with_SSIM'
+Notes = 'Full_data_no_mu_with_SSIM_on_left_right_only_'
 
 # build data generators
 train_generator = depthDataGenerator('../train/left/','../train/right/',batch_size=batchSize, shuffle=True, max_img_time_diff=700 )
