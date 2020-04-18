@@ -25,7 +25,10 @@ train_generator = depthDataGenerator('../train/left/','../train/right/',batch_si
 val_generator  = depthDataGenerator('../val/left/', '../val/right/', batch_size=batchSize, shuffle=False, agumentations=False, max_img_time_diff=700)
 
 # build loss
-loss = monoDepthV2Loss(0.001,640,192,batchSize).applyLoss # nine found to be roughtly even contribution to begin with 
+lossClasss = monoDepthV2Loss(0.001,640,192,batchSize)
+loss = lossClasss.applyLoss # nine found to be roughtly even contribution to begin with 
+repoLoss = lossClasss.fullReprojection
+smoothLoss = lossClasss.fullSmoothnessLoss
 
 # build model
 model = create_monoDepth_Model(input_shape=(640,192,3), encoder_type=18)
@@ -33,7 +36,7 @@ model = create_monoDepth_Model(input_shape=(640,192,3), encoder_type=18)
 #    model = multi_gpu_model(model)
 #except:
 #    pass
-model.compile(optimizer=Adam(lr=1e-3),loss=loss)
+model.compile(optimizer=Adam(lr=1e-3),loss=loss, metrics=[repoLoss,smoothLoss])
 
 # lets define some callbacks
 if not os.path.exists('models/' + Notes + '_' + trainingRunDate + '_batchsize_' + str(batchSize) + '/'):

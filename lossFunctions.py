@@ -171,6 +171,12 @@ class monoDepthV2Loss():
         using mu mask as defined in paper works poorly due to our samples being so seperated in time
 
         '''
+        L_p = self.fullReprojection(y_true, y_pred)
+        L_s = self.fullSmoothnessLoss(y_true, y_pred)
+
+        return L_p + L_s * self.lambda_
+
+    def fullSmoothnessLoss(self, y_true, y_pred):
         # rename and split values
         # [batch, width, height, channel]
         left        = y_true[:,:,:,0:3 ]
@@ -189,12 +195,7 @@ class monoDepthV2Loss():
         L_s += smoothnessLoss(disp2, left, 3) 
         L_s += smoothnessLoss(disp3, left, 4) 
 
-        L_p  = self.getReprojectionLoss(left, right, right_plus, right_minus, disp0)
-        L_p += self.getReprojectionLoss(left, right, right_plus, right_minus, disp1)
-        L_p += self.getReprojectionLoss(left, right, right_plus, right_minus, disp2)
-        L_p += self.getReprojectionLoss(left, right, right_plus, right_minus, disp3)
-
-        return L_p + L_s * self.lambda_
+        return L_s
 
     def getReprojectionLoss(self, left, right, right_plus, right_minus, disp):
         Direct, Reproject_0     = photoMetric(disp,left, right,       self.width, self.height, self.batchsize)
@@ -216,6 +217,28 @@ class monoDepthV2Loss():
         #L_p = K.mean(disp) # switching to this fixes out of bounds issue, will check to see if i can get this working 
         
         return K.mean(ReprojectedError) / 255.
+
+    def fullReprojection(self, y_true, y_pred):
+        
+        # rename and split values
+        # [batch, width, height, channel]
+        left        = y_true[:,:,:,0:3 ]
+        right_minus = y_true[:,:,:,3:6 ]
+        right       = y_true[:,:,:,6:9 ]
+        right_plus  = y_true[:,:,:,9:12]
+
+        disp0        = K.expand_dims(y_pred[:,:,:,0],-1)
+        disp1        = K.expand_dims(y_pred[:,:,:,1],-1)
+        disp2        = K.expand_dims(y_pred[:,:,:,2],-1)
+        disp3        = K.expand_dims(y_pred[:,:,:,3],-1)
+        # up-sample disparities by a nearest interpolation scheme for comparision at highest resolution per alrogithm
+
+        L_p  = self.getReprojectionLoss(left, right, right_plus, right_minus, disp0)
+        L_p += self.getReprojectionLoss(left, right, right_plus, right_minus, disp1)
+        L_p += self.getReprojectionLoss(left, right, right_plus, right_minus, disp2)
+        L_p += self.getReprojectionLoss(left, right, right_plus, right_minus, disp3)
+
+        return L_p
 '''
 TODO
 
