@@ -86,7 +86,6 @@ def smoothnessLoss(y_predicted, leftImage, numConv):
 
     return K.mean(K.abs(findGradients(y_predicted, leftImgPyramid[i]))) / 2 ** i 
 
-
 def photoMetric(disp, left, right, width, height, batchsize):
 
     # Flatten and seperate out channels
@@ -104,12 +103,18 @@ def photoMetric(disp, left, right, width, height, batchsize):
     right_referances = K.clip(indicies + (disp_f * -1 * width), 0, batchsize*width*height)
 
     # OK TO THIS POINT NO GRADS GET LOST
-    intReferances = K.cast(tf.floor(right_referances), 'int32')
+    intReferancesLow = K.cast(tf.floor(right_referances), 'int32')
+    intReferancesHigh = K.cast(tf.ceil(right_referances), 'int32')
+
+    lowWeights  = 1-K.abs(K.cast(intReferancesLow,  'float32') - right_referances)
+    highWeights = 1-K.abs(K.cast(intReferancesHigh, 'float32') - right_referances)
 
     # gather the values to creat the left re-projected images
-    right_f_referance_to_projected_0 = K.gather(right_f_0, intReferances) 
-    right_f_referance_to_projected_1 = K.gather(right_f_1, intReferances)
-    right_f_referance_to_projected_2 = K.gather(right_f_2, intReferances)
+    right_f_referance_to_projected_0 = K.gather(right_f_0, intReferancesLow) * lowWeights + K.gather(right_f_0, intReferancesHigh) * highWeights 
+    right_f_referance_to_projected_1 = K.gather(right_f_1, intReferancesLow) * lowWeights + K.gather(right_f_1, intReferancesHigh) * highWeights
+    right_f_referance_to_projected_2 = K.gather(right_f_2, intReferancesLow) * lowWeights + K.gather(right_f_2, intReferancesHigh) * highWeights
+
+    #return K.mean(right_f_referance_to_projected_0)
 
     # get difference between original left and right images
     #L2Direct      = K.sqrt(  K.square(left_f_0 - right_f_0) 
@@ -164,6 +169,22 @@ class monoDepthV2Loss():
         self.batchsize = batchsize
         self.alpha = alpha
 
+    def test(self, y_true, y_pred):
+        # rename and split values
+        # [batch, width, height, channel]
+        left        = y_true[:,:,:,0:3 ]
+        right_minus = y_true[:,:,:,3:6 ]
+        right       = y_true[:,:,:,6:9 ]
+        right_plus  = y_true[:,:,:,9:12]
+
+        disp0        = K.expand_dims(y_pred[:,:,:,0],-1)
+        disp1        = K.expand_dims(y_pred[:,:,:,1],-1)
+        disp2        = K.expand_dims(y_pred[:,:,:,2],-1)
+        disp3        = K.expand_dims(y_pred[:,:,:,3],-1)
+
+        L_p  = photoMetric(disp0,left, right, self.width, self.height, self.batchsize)
+        return L_p
+
     def applyLoss(self, y_true, y_pred):
         '''
         For photometric 
@@ -179,6 +200,7 @@ class monoDepthV2Loss():
         L_s = self.fullSmoothnessLoss(y_true, y_pred)
 
         return L_p + L_s * self.lambda_
+        #return L_p
 
     def fullSmoothnessLoss(self, y_true, y_pred):
         # rename and split values

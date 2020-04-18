@@ -17,7 +17,7 @@ from dataGen import depthDataGenerator
 # define these
 batchSize = 12
 trainingRunDate = '2020_4_18'
-Notes = 'Full_data_no_mu_with_SSIM_on_left_right_only_'
+Notes = 'Full_data_no_mu_with_SSIM_on_left_right_only_full_loss_'
 
 # build data generators
 train_generator = depthDataGenerator('../train/left/','../train/right/',batch_size=batchSize, shuffle=True, max_img_time_diff=700 )
@@ -27,6 +27,7 @@ val_generator  = depthDataGenerator('../val/left/', '../val/right/', batch_size=
 # build loss
 lossClasss = monoDepthV2Loss(0.001,0.85,640,192,batchSize)
 loss = lossClasss.applyLoss # nine found to be roughtly even contribution to begin with 
+#loss = lossClasss.test # nine found to be roughtly even contribution to begin with 
 repoLoss = lossClasss.fullReprojection
 smoothLoss = lossClasss.fullSmoothnessLoss
 
