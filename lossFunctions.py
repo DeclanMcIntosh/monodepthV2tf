@@ -184,17 +184,17 @@ class monoDepthV2Loss():
         disp3        = K.expand_dims(y_pred[:,:,:,3],-1)
         # up-sample disparities by a nearest interpolation scheme for comparision at highest resolution per alrogithm
 
-        #L_s  = smoothnessLoss(disp0, left, 1) 
-        #L_s += smoothnessLoss(disp1, left, 2) 
-        #L_s += smoothnessLoss(disp2, left, 3) 
-        #L_s += smoothnessLoss(disp3, left, 4) 
+        L_s  = smoothnessLoss(disp0, left, 1) 
+        L_s += smoothnessLoss(disp1, left, 2) 
+        L_s += smoothnessLoss(disp2, left, 3) 
+        L_s += smoothnessLoss(disp3, left, 4) 
 
         L_p  = self.getReprojectionLoss(left, right, right_plus, right_minus, disp0)
         L_p += self.getReprojectionLoss(left, right, right_plus, right_minus, disp1)
         L_p += self.getReprojectionLoss(left, right, right_plus, right_minus, disp2)
         L_p += self.getReprojectionLoss(left, right, right_plus, right_minus, disp3)
 
-        return L_p #+ L_s * self.lambda_
+        return L_p + L_s * self.lambda_
 
     def getReprojectionLoss(self, left, right, right_plus, right_minus, disp):
         Direct, Reproject_0     = photoMetric(disp,left, right,       self.width, self.height, self.batchsize)
