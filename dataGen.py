@@ -72,7 +72,7 @@ class depthDataGenerator(keras.utils.Sequence):
 
     def __getitem__(self, index):
         '''Generate one batch of data'''
-        outX =  np.empty((self.batch_size,  *self.image_size, 3))
+        outX  =  np.empty((self.batch_size,  *self.image_size, 3))
         outY_0 = np.empty((self.batch_size, *self.image_size, 3))
         outY_1 = np.empty((self.batch_size, *self.image_size, 3))
         outY_2 = np.empty((self.batch_size, *self.image_size, 3))
@@ -83,8 +83,8 @@ class depthDataGenerator(keras.utils.Sequence):
         for _, imageNameSet in enumerate(imageNames):
             left        = cv2.resize(cv2.imread(self.left_dir  + imageNameSet[0]), dsize=self.image_size)
             right_minus = cv2.resize(cv2.imread(self.right_dir + imageNameSet[1]), dsize=self.image_size)
-            right       = cv2.resize(cv2.imread(self.right_dir + imageNameSet[2]), dsize=self.image_size)
-            right_plus  = cv2.resize(cv2.imread(self.right_dir + imageNameSet[0]), dsize=self.image_size)
+            right       = cv2.resize(cv2.imread(self.right_dir + imageNameSet[0]), dsize=self.image_size)
+            right_plus  = cv2.resize(cv2.imread(self.right_dir + imageNameSet[2]), dsize=self.image_size)
             
             #print(left.shape)
             #cv2.imshow('test', left)
@@ -105,8 +105,7 @@ class depthDataGenerator(keras.utils.Sequence):
             outY_2[_] =  np.transpose(right,            axes=[1,0,2])
             outY_3[_] =  np.transpose(right_plus,       axes=[1,0,2])
 
-            #test_out = np.transpose(left_augmented,     axes=[1,0,2])
-
+            #test_out = outX[_].astype('uint8')#np.transpose(left_augmented,     axes=[1,0,2])
             #cv2.imshow('test', test_out)
             #cv2.waitKey(-1)
 
@@ -165,6 +164,6 @@ class depthDataGenerator(keras.utils.Sequence):
 
 
 if __name__ == "__main__":
-    test = depthDataGenerator('../validate/left/', '../validate/right/')
+    test = depthDataGenerator('../val/left/', '../val/right/',   batch_size=8, shuffle=True, max_img_time_diff=700)
 
     print('Data generator test success.')

@@ -16,12 +16,12 @@ from dataGen import depthDataGenerator
 
 # define these
 batchSize = 12
-trainingRunDate = '2020_4_18'
-Notes = 'Full_data_no_mu_with_SSIM_on_left_right_only_full_loss_'
+trainingRunDate = '2020_4_19'
+Notes = 'Full_data_no_mu_with_SSIM_on_left_right_only_full_loss_smoothness_0_3_disparity_scalling_res_18_bugfix_2_'
 
 # build data generators
-train_generator = depthDataGenerator('../train/left/','../train/right/',batch_size=batchSize, shuffle=True, max_img_time_diff=700 )
-#train_generator  = depthDataGenerator('../val/left/', '../val/right/', batch_size=batchSize, shuffle=True, max_img_time_diff=700)
+train_generator = depthDataGenerator('../train/left/','../train/right/', batch_size=batchSize, shuffle=True, max_img_time_diff=700 )
+#train_generator  = depthDataGenerator('../val/left/', '../val/right/',   batch_size=batchSize, shuffle=True, max_img_time_diff=700)
 val_generator  = depthDataGenerator('../val/left/', '../val/right/', batch_size=batchSize, shuffle=False, agumentations=False, max_img_time_diff=700)
 
 # build loss
@@ -56,5 +56,5 @@ def lr_schedule(epoch):
 
 lr = LearningRateScheduler(schedule=lr_schedule,verbose=1)
 
-model.fit_generator(train_generator, epochs = 20, validation_data=val_generator, callbacks=[mc,mc1,lr,tb])
+model.fit_generator(train_generator, epochs = 20, validation_data=val_generator, callbacks=[mc,mc1,lr,tb], initial_epoch=0)
 

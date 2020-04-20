@@ -90,17 +90,29 @@ def photoMetric(disp, left, right, width, height, batchsize):
 
     # Flatten and seperate out channels
     # [batch, width, height, channel]
+    
     disp_f =     K.flatten( K.permute_dimensions(          disp, pattern=(0,2,1,3)))
     left_f_0 =   K.flatten( K.permute_dimensions( left[:,:,:,0], pattern=(0,2,1)))
     right_f_0 =  K.flatten( K.permute_dimensions(right[:,:,:,0], pattern=(0,2,1)))
     left_f_1 =   K.flatten( K.permute_dimensions( left[:,:,:,1], pattern=(0,2,1)))
     right_f_1 =  K.flatten( K.permute_dimensions(right[:,:,:,1], pattern=(0,2,1)))
     left_f_2 =   K.flatten( K.permute_dimensions( left[:,:,:,2], pattern=(0,2,1)))
-    right_f_2 =  K.flatten( K.permute_dimensions(right[:,:,:,2], pattern=(0,2,1)))
-    # find the self-referantiatl indicies in the tensor
+    right_f_2 =  K.flatten( K.permute_dimensions(right[:,:,:,2], pattern=(0,2,1))) 
+
+
+    #test = K.eval(left_f_0)
+    #disp_f =     K.flatten(          disp)
+    #left_f_0 =   K.flatten( left[:,:,:,0])
+    #right_f_0 =  K.flatten(right[:,:,:,0])
+    #left_f_1 =   K.flatten( left[:,:,:,1])
+    #right_f_1 =  K.flatten(right[:,:,:,1])
+    #left_f_2 =   K.flatten( left[:,:,:,2])
+    #right_f_2 =  K.flatten(right[:,:,:,2]) 
+
+    # find the self-referantiatl indicies in the tensor 
     indicies = K.arange(0,batchsize*width*height, dtype='float32')
 
-    right_referances = K.clip(indicies + (disp_f * -1 * width), 0, batchsize*width*height)
+    right_referances = K.clip(indicies + (disp_f * 1. * width * 0.3), 0, batchsize*width*height) # changed to 0.3 to reflect v1 paper implemenation details
 
     # OK TO THIS POINT NO GRADS GET LOST
     intReferancesLow = K.cast(tf.floor(right_referances), 'int32')
@@ -272,8 +284,46 @@ test
 
 get batch size != 1 working
 '''
-
 if __name__ == "__main__":
+    from dataGen import depthDataGenerator
+    import cv2
+    import numpy as np
+
+    batchSize = 8
+    
+    train_generator  = depthDataGenerator('../val/left/', '../val/right/',   batch_size=batchSize, shuffle=True, max_img_time_diff=700)
+
+    inputImage, y_true = train_generator.__getitem__(1)
+
+    left_raw        = y_true[0,:,:,0:3]
+    right_raw        = y_true[0,:,:,6:9]
+
+    cv2.imshow("test", left_raw.astype('uint8'))
+    cv2.waitKey(-1)
+
+    cv2.imshow("test", right_raw.astype('uint8'))
+    cv2.waitKey(-1)
+
+    y_true = tf.convert_to_tensor(y_true.astype('float32'))
+
+    left        = y_true[:,:,:,0:3 ]
+    right_minus = y_true[:,:,:,3:6 ]
+    right       = y_true[:,:,:,6:9 ]
+    right_plus  = y_true[:,:,:,9:12]
+
+    rand      = np.random.rand(batchSize,640,192,1 ).astype('float32')
+    scale      = np.ones_like(rand).astype('float32') * 10/640
+    randImage_tensor       = tf.convert_to_tensor(rand)
+    scale_tensor       = tf.convert_to_tensor(scale)
+
+    L1Direct, L1Reproject, SSIM_right_reproject, SSIM_right_left = photoMetric(randImage_tensor, left, right, 640, 192, batchSize)
+    print(1-K.eval(SSIM_right_reproject))
+    print(1-K.eval(SSIM_right_left))
+    L1Direct, L1Reproject, SSIM_right_reproject, SSIM_right_left = photoMetric(scale_tensor, left, right, 640, 192, batchSize)
+    print(1-K.eval(SSIM_right_reproject))
+    print(1-K.eval(SSIM_right_left))
+
+def oldTest():
 
     #leftImage  = '../val/left/2018-07-16-15-37-46_2018-07-16-15-38-12-727.jpg'
     #dispImage  = '../val/disp/2018-07-16-15-37-46_2018-07-16-15-38-12-727.png' # actuall associated disparity
@@ -293,14 +343,20 @@ if __name__ == "__main__":
     dispTrue  = np.transpose(cv2.imread(dispImage),     axes=[1,0,2]).astype('float32')[:,:,0] / 256.
     dispWrong = np.transpose(cv2.imread(dispImage1),    axes=[1,0,2]).astype('float32')[:,:,0] / 256.
     right     = np.transpose(cv2.imread(rightImage),    axes=[1,0,2]).astype('float32')
-    rand      = np.random.randint(0, 2**16, size=left.shape, dtype='int32').astype('float32')
+    rand      = np.random.rand(left.shape[0],left.shape[1],1 ).astype('float32')
     leftButScaled = left * 0.4
     
     width = left.shape[0]
     height = left.shape[1]
     realOffset = 3
 
-    
+    leftNew = np.zeros_like(left)
+    leftNew[75:,:,:] = left[0:-75,:,:]
+    left[-75:0,:,:] = 0 
+    dispTrue = np.ones_like(dispTrue) / width * 75
+    dispTrue[-75:,:] = 0
+         
+    leftNew_tensor          = tf.expand_dims(tf.convert_to_tensor(leftNew), 0)
     leftImage_tensor        = tf.expand_dims(tf.convert_to_tensor(left), 0)
     rightImage_tensor       = tf.expand_dims(tf.convert_to_tensor(right), 0)
     dispImage_tensor        = tf.expand_dims(tf.expand_dims(tf.convert_to_tensor(dispTrue), 0), -1)
@@ -308,6 +364,7 @@ if __name__ == "__main__":
     randImage_tensor        = tf.expand_dims(tf.convert_to_tensor(rand), 0)
     leftScaledImage_tensor  = tf.expand_dims(tf.convert_to_tensor(leftButScaled), 0)
 
+    leftNew_tensor       = K.concatenate([leftNew_tensor        ,leftNew_tensor        ,leftNew_tensor      ], axis=0) 
     leftImage_tensor       = K.concatenate([leftImage_tensor        ,leftImage_tensor        ,leftImage_tensor      ], axis=0) 
     rightImage_tensor      = K.concatenate([rightImage_tensor       ,rightImage_tensor       ,rightImage_tensor     ], axis=0) 
     dispImage_tensor       = K.concatenate([dispImage_tensor        ,dispImage_tensor        ,dispImage_tensor      ], axis=0) 
@@ -315,11 +372,12 @@ if __name__ == "__main__":
     randImage_tensor       = K.concatenate([randImage_tensor        ,randImage_tensor        ,randImage_tensor      ], axis=0) 
     leftScaledImage_tensor = K.concatenate([leftScaledImage_tensor  ,leftScaledImage_tensor  ,leftScaledImage_tensor], axis=0) 
 
-    Direct, Reproject_0  = photoMetric(dispImage_tensor,  leftImage_tensor, rightImage_tensor, width, height, 3)
-    print(K.eval(Lp))
-    Direct, Reproject_0 = photoMetric(dispImage_tensor1, leftImage_tensor, rightImage_tensor, width, height, 3)
-    print(K.eval(Lp1))
-
+    #L1Direct, L1Reproject, SSIM_right_reproject, SSIM_right_left  = photoMetric(dispImage_tensor,  leftImage_tensor, rightImage_tensor, width, height, 3)
+    #print(K.eval(SSIM_right_reproject))
+    #L1Direct, L1Reproject, SSIM_right_reproject, SSIM_right_left = photoMetric(randImage_tensor, leftImage_tensor, rightImage_tensor, width, height, 3)
+    #print(K.eval(SSIM_right_reproject))
+    L1Direct, L1Reproject, SSIM_right_reproject, SSIM_right_left = photoMetric(dispImage_tensor, leftNew_tensor, leftImage_tensor, width, height, 3)
+    print(K.eval(SSIM_right_reproject))
     # print("good")
     # print(K.eval(Lp))
     # print("bad")
