@@ -1,5 +1,4 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
 import tensorflow as tf
 import keras 
 import cv2
@@ -15,6 +14,9 @@ from modelDef import create_monoDepth_Model
 from lossFunctions import monoDepthV2Loss
 from dataGen import depthDataGenerator
 from evaluationMetrics import generateARDmetric, absoluteRelativeSqrd
+
+# flags
+visualize = False
 
 # define these
 batchSize = 1
@@ -32,7 +34,7 @@ model = create_monoDepth_Model(input_shape=(640,192,3), encoder_type=18)
 
 model.compile(optimizer=Adam(lr=1e-3),loss=loss, metrics=[repoLoss, smoothLoss, repoLossL1, lossL1])
 
-def evaluateModel(model,batchSize):
+def evaluateModel(model,batchSize, visualize):
     val_generator  = depthDataGenerator('../test/left/', '../test/right/', batch_size=batchSize, shuffle=False, agumentations=False, max_img_time_diff=700)
     scores = model.evaluate_generator(val_generator, verbose=1)
     print("Total Loss, Reprojection Loss, Smoothness Loss, L1 Reprojection Loss, L1 Total Loss", scores)
@@ -58,9 +60,13 @@ def evaluateModel(model,batchSize):
     outputDisplayScale2 = displayOutput(output, 2)
     outputDisplayScale3 = displayOutput(output, 3)
 
-    #cv2.imshow("Input Image", rawImage)
-    #cv2.imshow("Scaled for display Disparity", outputTransformed)
-    #cv2.waitKey(-1)
+    if visualize:
+        cv2.imshow("Input Image", rawImage)
+        cv2.imshow("Display Disparity No Downscale", outputDisplayScale0)
+        cv2.imshow("Display Disparity 1/2 Downscale", outputDisplayScale1)
+        cv2.imshow("Display Disparity 1/4 Downscale", outputDisplayScale2)
+        cv2.imshow("Display Disparity 1/8 Downscale", outputDisplayScale3)
+        cv2.waitKey(-1)
 
 
     # actual Evaluation
@@ -85,10 +91,10 @@ def evaluateModel(model,batchSize):
 
 print("Testing model trained on just L1 distance Loss")
 model.load_weights("models/Full_data_no_mu_with_SSIM_on_left_right_only_full_loss_smoothness_0_3_disparity_scalling_res_18_no_SSI__2020_4_19_batchsize_12/_weights_epoch20_val_loss_0.0662_train_loss_0.0556.hdf5")
-evaluateModel(model,batchSize)
+evaluateModel(model,batchSize, visualize)
 
 
 print("Testing model trained on full loss with SSIM")
 model.load_weights("models/Full_data_no_mu_with_SSIM_on_left_right_only_full_loss_smoothness_0_3_disparity_scalling_res_18_bugfix_2__2020_4_19_batchsize_12/_weights_epoch20_val_loss_1.7095_train_loss_1.7080.hdf5")
-evaluateModel(model,batchSize)
+evaluateModel(model,batchSize, visualize)
 
