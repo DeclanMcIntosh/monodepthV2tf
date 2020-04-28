@@ -87,6 +87,9 @@ def smoothnessLoss(y_predicted, leftImage, numConv):
     return K.mean(K.abs(findGradients(y_predicted, leftImgPyramid[i]))) / 2 ** i 
 
 def photoMetric(disp, left, right, width, height, batchsize):
+    '''
+    Partially inspired by https://github.com/mtngld/monodepth-1/blob/1f1fc80ac0dc727f3de561ead89e6792aea5e178/bilinear_sampler.py, eg use of gather function
+    '''
 
     # Flatten and seperate out channels
     # [batch, width, height, channel]
@@ -98,16 +101,6 @@ def photoMetric(disp, left, right, width, height, batchsize):
     right_f_1 =  K.flatten( K.permute_dimensions(right[:,:,:,1], pattern=(0,2,1)))
     left_f_2 =   K.flatten( K.permute_dimensions( left[:,:,:,2], pattern=(0,2,1)))
     right_f_2 =  K.flatten( K.permute_dimensions(right[:,:,:,2], pattern=(0,2,1))) 
-
-
-    #test = K.eval(left_f_0)
-    #disp_f =     K.flatten(          disp)
-    #left_f_0 =   K.flatten( left[:,:,:,0])
-    #right_f_0 =  K.flatten(right[:,:,:,0])
-    #left_f_1 =   K.flatten( left[:,:,:,1])
-    #right_f_1 =  K.flatten(right[:,:,:,1])
-    #left_f_2 =   K.flatten( left[:,:,:,2])
-    #right_f_2 =  K.flatten(right[:,:,:,2]) 
 
     # find the self-referantiatl indicies in the tensor 
     indicies = K.arange(0,batchsize*width*height, dtype='float32')
@@ -214,6 +207,24 @@ class monoDepthV2Loss():
         return L_p + L_s * self.lambda_
         #return L_p
 
+    def applyLossL1(self, y_true, y_pred):
+        '''
+        For photometric 
+        get direct comparision loss left to right 
+        get repojections pe values to t-1 t and t+1 from left
+        K = take elementwise minimium between the reporjection losses
+        mask with the minimum between the direct comparison and K 
+
+        using mu mask as defined in paper works poorly due to our samples being so seperated in time
+
+        '''
+        L_p = self.fullReprojectionL1(y_true, y_pred)
+        L_s = self.fullSmoothnessLoss(y_true, y_pred)
+
+        return L_p + L_s * self.lambda_
+        #return L_p
+
+
     def fullSmoothnessLoss(self, y_true, y_pred):
         # rename and split values
         # [batch, width, height, channel]
@@ -254,6 +265,26 @@ class monoDepthV2Loss():
         
         return ((self.alpha/2.) * (1 - SSIM_right_repo_0)) + ((K.mean(ReprojectedError) / 255.) * (1 - self.alpha)) 
 
+    def getReprojectionLossL1(self, left, right, right_plus, right_minus, disp):
+            Direct, Reproject_0   , SSIM_right_repo_0, SSIM_right_left_0  = photoMetric(disp,left, right,       self.width, self.height, self.batchsize)
+            Direct, Reproject_1   , SSIM_right_repo_1, SSIM_right_left_1  = photoMetric(disp,left, right_plus,  self.width, self.height, self.batchsize)
+            Direct, Reproject_neg1, SSIM_right_repo_2, SSIM_right_left_2  = photoMetric(disp,left, right_minus, self.width, self.height, self.batchsize)
+
+            ReprojectedError = K.minimum(Reproject_0, Reproject_1)
+            ReprojectedError = K.minimum(ReprojectedError, Reproject_neg1)
+
+            mu_mask = K.cast(K.less(ReprojectedError, Direct), 'float32')
+
+            mu_mask_custom = K.sqrt(K.mean(K.square(right_minus - right), axis=-1))
+            mu_mask_custom = K.flatten(K.permute_dimensions( mu_mask_custom, pattern=(0,2,1)))
+            mu_mask_custom = K.cast(K.less(ReprojectedError, mu_mask_custom ), 'float32')
+
+            #ReprojectedError = mu_mask * ReprojectedError 
+            ReprojectedError = mu_mask_custom * ReprojectedError 
+            
+            return K.mean(ReprojectedError) / 255.
+
+
     def fullReprojection(self, y_true, y_pred):
         
         # rename and split values
@@ -273,6 +304,28 @@ class monoDepthV2Loss():
         L_p += self.getReprojectionLoss(left, right, right_plus, right_minus, disp1)
         L_p += self.getReprojectionLoss(left, right, right_plus, right_minus, disp2)
         L_p += self.getReprojectionLoss(left, right, right_plus, right_minus, disp3)
+
+        return L_p
+
+    def fullReprojectionL1(self, y_true, y_pred):
+        
+        # rename and split values
+        # [batch, width, height, channel]
+        left        = y_true[:,:,:,0:3 ]
+        right_minus = y_true[:,:,:,3:6 ]
+        right       = y_true[:,:,:,6:9 ]
+        right_plus  = y_true[:,:,:,9:12]
+
+        disp0        = K.expand_dims(y_pred[:,:,:,0],-1)
+        disp1        = K.expand_dims(y_pred[:,:,:,1],-1)
+        disp2        = K.expand_dims(y_pred[:,:,:,2],-1)
+        disp3        = K.expand_dims(y_pred[:,:,:,3],-1)
+        # up-sample disparities by a nearest interpolation scheme for comparision at highest resolution per alrogithm
+
+        L_p  = self.getReprojectionLossL1(left, right, right_plus, right_minus, disp0)
+        L_p += self.getReprojectionLossL1(left, right, right_plus, right_minus, disp1)
+        L_p += self.getReprojectionLossL1(left, right, right_plus, right_minus, disp2)
+        L_p += self.getReprojectionLossL1(left, right, right_plus, right_minus, disp3)
 
         return L_p
 '''

@@ -4,6 +4,7 @@ using numpy and cv2, these will need to re-implemented using tensorflow for live
 '''
 import numpy as np
 import cv2
+from math import sqrt
 
 
 def generateARDmetric(estimated, ground):
@@ -25,7 +26,7 @@ def generateARDmetric(estimated, ground):
 
     # get the differences
     for x in range(0,estimated.shape[0]):
-        for y in range(0,estimated.shape[0]):
+        for y in range(0,estimated.shape[1]):
             if ground[x,y] != 0:
                 output += abs((estimated[x,y]-ground[x,y]))/ground[x,y]
 
@@ -58,6 +59,31 @@ def generateMRmetric(estimated, ground, theta):
     d_p = (agreementCount/Normalizer) * 100
 
     return d_p
+
+def absoluteRelativeSqrd(estimated, ground):
+    ''' 
+    this generates the MR (matching rate) preformance metric
+    based on the estimate, ground depth data, and the theta value for matching values which agree
+    '''
+    # assert ground and estimated values shapes lineup
+    assert estimated.shape ==  ground.shape
+
+    # count the number of valid ground depth values as it is sparce
+    Normalizer = np.count_nonzero(ground)
+    elements = np.nonzero(ground)
+
+    agreement = 0
+    agreementSqrd = 0
+    # define function for vectorization which finde th ADR value for each pixle depth pair
+    for element in range(elements[0].shape[0]):
+        x = elements[0][element]
+        y = elements[1][element]
+        val1 = estimated[x,y]
+        val2 = ground[x,y]
+        agreement += abs(val1-val2)
+        agreementSqrd += sqrt(val1*val1 + val2*val2)
+
+    return agreement/Normalizer, agreementSqrd/Normalizer
 
 if __name__ == "__main__":
     depth = cv2.imread("../test/disp/2018-10-27-08-54-23_2018-10-27-08-54-27-073.png")
