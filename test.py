@@ -35,9 +35,10 @@ model = create_monoDepth_Model(input_shape=(640,192,3), encoder_type=18)
 model.compile(optimizer=Adam(lr=1e-3),loss=loss, metrics=[repoLoss, smoothLoss, repoLossL1, lossL1])
 
 def evaluateModel(model,batchSize, visualize):
-    val_generator  = depthDataGenerator('../test/left/', '../test/right/', batch_size=batchSize, shuffle=False, agumentations=False, max_img_time_diff=700)
-    scores = model.evaluate_generator(val_generator, verbose=1)
-    print("Total Loss, Reprojection Loss, Smoothness Loss, L1 Reprojection Loss, L1 Total Loss", scores)
+    #val_generator  = depthDataGenerator('../test/left/', '../test/right/', batch_size=batchSize, shuffle=False, agumentations=False, max_img_time_diff=700)
+    #scores = model.evaluate_generator(val_generator, verbose=1)
+    #print("Total Loss, Reprojection Loss, Smoothness Loss, L1 Reprojection Loss, L1 Total Loss")
+    #print(scores)
     ARD = 0
     count = 0 
     ABS = 0 
@@ -62,10 +63,16 @@ def evaluateModel(model,batchSize, visualize):
 
     if visualize:
         cv2.imshow("Input Image", rawImage)
-        cv2.imshow("Display Disparity No Downscale", outputDisplayScale0)
+        cv2.imshow("Display Disparity No Downscale",  outputDisplayScale0)
         cv2.imshow("Display Disparity 1/2 Downscale", outputDisplayScale1)
         cv2.imshow("Display Disparity 1/4 Downscale", outputDisplayScale2)
         cv2.imshow("Display Disparity 1/8 Downscale", outputDisplayScale3)
+
+        #cv2.imwrite("../Images/InputImages.png",  rawImage )
+        #cv2.imwrite("../Images/Display Disparity No Downscale.png",  outputDisplayScale0 )
+        #cv2.imwrite("../Images/Display Disparity 1_2 Downscale.png", outputDisplayScale1 )
+        #cv2.imwrite("../Images/Display Disparity 1_4 Downscale.png", outputDisplayScale2 )
+        #cv2.imwrite("../Images/Display Disparity 1_8 Downscale.png", outputDisplayScale3 )
         cv2.waitKey(-1)
 
 
@@ -85,16 +92,18 @@ def evaluateModel(model,batchSize, visualize):
         count += 1
         print(count, " of ", len(imgs) , end='\r')
     print("Mean ARD: ", ARD / count)
-    print("Mean ABS: ", ABS / count)
     print("Mean SQR: ", SQR / count)
+    print("")
 
+
+print("Testing model trained on full loss with SSIM")
+model.load_weights("models/Full_data_no_mu_with_SSIM_on_left_right_only_full_loss_smoothness_0_3_disparity_scalling_res_18_bugfix_2__2020_4_19_batchsize_12/_weights_epoch20_val_loss_1.7095_train_loss_1.7080.hdf5")
+evaluateModel(model,batchSize, visualize)
 
 print("Testing model trained on just L1 distance Loss")
 model.load_weights("models/Full_data_no_mu_with_SSIM_on_left_right_only_full_loss_smoothness_0_3_disparity_scalling_res_18_no_SSI__2020_4_19_batchsize_12/_weights_epoch20_val_loss_0.0662_train_loss_0.0556.hdf5")
 evaluateModel(model,batchSize, visualize)
 
 
-print("Testing model trained on full loss with SSIM")
-model.load_weights("models/Full_data_no_mu_with_SSIM_on_left_right_only_full_loss_smoothness_0_3_disparity_scalling_res_18_bugfix_2__2020_4_19_batchsize_12/_weights_epoch20_val_loss_1.7095_train_loss_1.7080.hdf5")
-evaluateModel(model,batchSize, visualize)
+
 

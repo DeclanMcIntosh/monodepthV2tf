@@ -81,7 +81,7 @@ def absoluteRelativeSqrd(estimated, ground):
         val1 = estimated[x,y]
         val2 = ground[x,y]
         agreement += abs(val1-val2)
-        agreementSqrd += sqrt(val1*val1 + val2*val2)
+        agreementSqrd += abs(val1*val1 - val2*val2) / val2
 
     return agreement/Normalizer, agreementSqrd/Normalizer
 
