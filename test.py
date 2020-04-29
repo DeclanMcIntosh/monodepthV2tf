@@ -35,10 +35,10 @@ model = create_monoDepth_Model(input_shape=(640,192,3), encoder_type=18)
 model.compile(optimizer=Adam(lr=1e-3),loss=loss, metrics=[repoLoss, smoothLoss, repoLossL1, lossL1])
 
 def evaluateModel(model,batchSize, visualize):
-    #val_generator  = depthDataGenerator('../test/left/', '../test/right/', batch_size=batchSize, shuffle=False, agumentations=False, max_img_time_diff=700)
-    #scores = model.evaluate_generator(val_generator, verbose=1)
-    #print("Total Loss, Reprojection Loss, Smoothness Loss, L1 Reprojection Loss, L1 Total Loss")
-    #print(scores)
+    val_generator  = depthDataGenerator('../test/left/', '../test/right/', batch_size=batchSize, shuffle=False, agumentations=False, max_img_time_diff=700)
+    scores = model.evaluate_generator(val_generator, verbose=1)
+    print("Total Loss, Reprojection Loss, Smoothness Loss, L1 Reprojection Loss, L1 Total Loss")
+    print(scores)
     ARD = 0
     count = 0 
     ABS = 0 
