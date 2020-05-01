@@ -121,3 +121,6 @@ The correct placement of folders with data must be provided to evaluate the mode
 test.py can be run with both the provided trained models present in the monodepthV2tf directory, and existing test data. This script will print out all results described in the report. Additionally it can be given a flag to generate a random output of the network displayed with the corresponding input value for all the scales. 
 
 This can be achieved by setting the "visualize" flag to True in this file, pressing any button on these popup windows will continue evaluating that model. Models are evaluated one after the other. 
+
+## Credits
+The two repositories referenced during the construction of this repository are [monodepth](https://github.com/mrharicot/monodepth) and [monodepth2](https://github.com/nianticlabs/monodepth2)
