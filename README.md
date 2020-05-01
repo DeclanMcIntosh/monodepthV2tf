@@ -106,7 +106,7 @@ Corresponding folders for disp, right, and left should all have the same number 
 To train the model run training.py, ensuring existence of pre-trained weights in monodepthV2tf folder, and ensuring accurate data exists.
 
 ### Known Issues
-There may be an error with running in CPU only mode, where the indices that are out of bounds are not ignored. 
+There may be an error with running in CPU only mode, where the indices that are out of bounds are not ignored. We believe this error has been fixed, so this should not re-appear.
 ``` 
 Exception has occurred: InvalidArgumentError
 indices[122879] = 122880 is not in [0, 122880)
