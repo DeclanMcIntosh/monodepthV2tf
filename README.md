@@ -1,6 +1,6 @@
 # monodepthV2tf
 
-Here is Declan and Robert's tensorflow implementation of monodepthV2.
+Here is Declan and Robert's TensorFlow implementation of monodepthV2.
 
 ## Dependencies
 
@@ -8,10 +8,15 @@ Here is Declan and Robert's tensorflow implementation of monodepthV2.
 All models can be downloaded from:
 https://drive.google.com/drive/folders/14tYG4Q0djheP52v8lcKPLCZL7NT-gjjz?usp=sharing
 
-These models should be placed directly in the source directory.
+These models should be placed directly in the source directory under the subfolder `models`.
+
+The two models are placed as follows:
+- `models/Full_data_no_mu_with_SSIM_on_left_right_only_full_loss_smoothness_0_3_disparity_scalling_res_18_bugfix_2__2020_4_19_batchsize_12/_weights_epoch20_val_loss_1.7095_train_loss_1.7080.hdf5`
+- `models/Full_data_no_mu_with_SSIM_on_left_right_only_full_loss_smoothness_0_3_disparity_scalling_res_18_no_SSI__2020_4_19_batchsize_12/_weights_epoch20_val_loss_0.0662_train_loss_0.0556.hdf5`
+
 ### Python
 
-All development was performed in python 3.6.6 64 bit, and was not tested for different versions.
+All development was performed in Python 3.6.6 and 3.7.7 64-bit and was not tested for different versions.
 
 ### Packages
 All required packages can be downloaded using PIP and the dependencies.txt file provided with this code.
@@ -20,10 +25,10 @@ All required packages can be downloaded using PIP and the dependencies.txt file 
 
 ### Setting Up data
 
-Data generators have been provided but assume data is sotred in the style of the Driving Stereo dataset which can be downloaded from:
+Data generators have been provided but assume data is stored in the style of the Driving Stereo dataset which can be downloaded from:
 https://drivingstereo-dataset.github.io/
 
-Data was split by the corresponding zipped files, loosely corresponding to continious runs, to ensure largest utalization of data and independence of train, valiadte, and test sets.
+Data was split by the corresponding zipped files, loosely corresponding to continuous runs, to ensure largest utilization of data and independence of train, validate, and test sets.
 
 The splits were as follows by file name:
 
@@ -96,13 +101,13 @@ Corresponding folders for disp, right, and left should all have the same number 
 
 ### Running trainer
 
-To train the model run trainig.py, ensuring existance of pre-trained weights in monodepthV2tf folder, and ensuring accurate data exists.
+To train the model run training.py, ensuring existence of pre-trained weights in monodepthV2tf folder, and ensuring accurate data exists.
 
 ## Evaluating 
 
 A single script solution has been provided to evaluate the models,
 The correct placement of folders with data must be provided to evaluate the model.
 
-test.py can be run with both the provided trained models present in the  monodepthV2tf directory, and existing test data. This script will print out all results described in the report. Additionally it can be given a flag to generate a random output of the network displayed with the corresponding input value for all the scales. 
+test.py can be run with both the provided trained models present in the monodepthV2tf directory, and existing test data. This script will print out all results described in the report. Additionally it can be given a flag to generate a random output of the network displayed with the corresponding input value for all the scales. 
 
-This can be achived by setting the "visualize" flag to True in this file, pressing any button on these popup windows will continue evaluating that model. Models are evaluated one after the other. 
+This can be achieved by setting the "visualize" flag to True in this file, pressing any button on these popup windows will continue evaluating that model. Models are evaluated one after the other. 

@@ -103,7 +103,3 @@ evaluateModel(model,batchSize, visualize)
 print("Testing model trained on just L1 distance Loss")
 model.load_weights("models/Full_data_no_mu_with_SSIM_on_left_right_only_full_loss_smoothness_0_3_disparity_scalling_res_18_no_SSI__2020_4_19_batchsize_12/_weights_epoch20_val_loss_0.0662_train_loss_0.0556.hdf5")
 evaluateModel(model,batchSize, visualize)
-
-
-
-

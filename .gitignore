@@ -3,6 +3,7 @@
 
 # Saved models
 *.h5
+*.hdf5
 
 # python
 *.pyc
