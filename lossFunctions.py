@@ -105,7 +105,7 @@ def photoMetric(disp, left, right, width, height, batchsize):
     # find the self-referantiatl indicies in the tensor 
     indicies = K.arange(0,batchsize*width*height, dtype='float32')
 
-    right_referances = K.clip(indicies + (disp_f * 1. * width * 0.3), 0, batchsize*width*height) # changed to 0.3 to reflect v1 paper implemenation details
+    right_referances = K.clip(indicies + (disp_f * 1. * width * 0.3), 0, batchsize*width*height-1) # changed to 0.3 to reflect v1 paper implemenation details
 
     # OK TO THIS POINT NO GRADS GET LOST
     intReferancesLow = K.cast(tf.floor(right_referances), 'int32')
