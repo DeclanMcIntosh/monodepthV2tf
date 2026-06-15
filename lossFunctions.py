@@ -148,19 +148,21 @@ def photoMetric(disp, left, right, width, height, batchsize):
     variance_reproject  = K.sum(K.square(greyImageReproject - mean_reproject))  /(batchsize*width*height - 1)
     variance_left       = K.sum(K.square(greyLeftImage      - mean_left))       /(batchsize*width*height - 1)
 
-    covariance_right_reproject  = K.sum((greyImageRight - mean_right)*(greyImageReproject - mean_reproject))/(batchsize*width*height - 1) # TODO not sum this for masking
+    covariance_left_reproject   = K.sum((greyLeftImage  - mean_left)  *(greyImageReproject - mean_reproject))/(batchsize*width*height - 1) # TODO not sum this for masking
     covariance_left_right       = K.sum((greyLeftImage  - mean_left) *(greyImageRight     - mean_right))    /(batchsize*width*height - 1) # TODO not sum this for masking
 
     L = 256 - 1 # the range of the iamges
 
     c_1 = (0.01 * L) * (0.01 * L) # default values
     c_2 = (0.03 * L) * (0.03 * L) # default values
-    
-    SSIM_right_reproject = (2*mean_right*mean_reproject+c_1)*(2*covariance_right_reproject + c_2)/ \
-                            ((mean_right*mean_right+mean_reproject*mean_reproject+c_1)*(variance_right*variance_right+variance_reproject*variance_reproject+c_2))
+
+    # The disparity warps the right image to reconstruct the left image, so the
+    # reconstruction (reproject) must be compared against the LEFT image, not the right.
+    SSIM_right_reproject = (2*mean_left*mean_reproject+c_1)*(2*covariance_left_reproject + c_2)/ \
+                            ((mean_left*mean_left+mean_reproject*mean_reproject+c_1)*(variance_left+variance_reproject+c_2))
 
     SSIM_right_left      = (2*mean_right*mean_left+c_1)*(2*covariance_left_right + c_2)/ \
-                            ((mean_right*mean_right+mean_left*mean_left+c_1)*(variance_right*variance_right+variance_left*variance_left+c_2))
+                            ((mean_right*mean_right+mean_left*mean_left+c_1)*(variance_right+variance_left+c_2))
 
     #return L1Direct, L1Reproject * (right_referances /( right_referances + 1e-10)), SSIM_right_reproject, SSIM_right_left
     return L1Direct, L1Reproject, SSIM_right_reproject, SSIM_right_left
